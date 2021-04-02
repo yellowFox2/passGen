@@ -66,5 +66,5 @@ def generateNewPW(tmp):
 		i += 1
 	print('new password: ',literalHashTable[index])
 
-
+#test
 generateNewPW(getUserInput())
