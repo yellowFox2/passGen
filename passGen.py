@@ -55,7 +55,8 @@ def updateVaultTable(vaultKeyPath):
 	tmp = {}
 	tmp = getVaultTable(vaultKeyPath)
 	keyName = read('site alias? (i.e. "reddit")\n')
-	tmp['passwords']['reddit'] = getUserPW()
+	#tmp['passwords'][keyName] = getUserPW()
+	tmp['passwords'][keyName] = read('enter pw:\n')
 	setVaultTable(tmp,vaultKeyPath)
 
 def setVaultTable(tmpTable,vaultKeyPath): #save dict to json and encrypt with key
@@ -64,7 +65,7 @@ def setVaultTable(tmpTable,vaultKeyPath): #save dict to json and encrypt with ke
 		key = mykey.read()
 	f = Fernet(key)
 	#TO-DO: error handling -- make sure file is locked
-	with open(vaultPath,'wb') as vault:
+	with open(vaultPath,'w') as vault:
 		json.dump(tmpTable,vault)
 	encryptVaultTable(vaultKeyPath)
 
