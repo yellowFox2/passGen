@@ -3,11 +3,11 @@ from threading import Thread, Lock
 from getpass import getpass as gp
 from cryptography.fernet import Fernet
 import xml.etree.ElementTree as ET
+from pygments import highlight, lexers, formatters
 
-#TODO: password vault
+#TODO: password vault updating
 #Will contain dictionary of urls and passwords
-#Encrypt dictionary as string -- need to pick encoding for string
-
+#Encrypt dictionary as string -- need to pick encoding for string (?)
 
 def read(prompt):
 	if sys.version_info[0] == 2:
@@ -24,29 +24,49 @@ def generateVaultKey(vaultKeyPath): #only once. used to access vault table
 def storeVaultKey(): #store private key locally (somewhere safe)
 	pass
 
-
-
-def getVaultTable(vaultKeyPath): #decrypt vault table first
+def getVaultPath():
 	xmlPath = os.path.dirname(os.path.abspath(__file__)) + '/config/config.xml'
 	xml = ET.parse(xmlPath)
 	root = xml.getroot()
-	return json.load(open(root[1].text))
+	return root[1].text
 
-def setVaultTable(tmpTable,vaultKeyPath): #save dict to json and encrypt with key
-	xmlPath = os.path.dirname(os.path.abspath(__file__)) + '/config/config.xml'
-	xml = ET.parse(xmlPath)
-	root = xml.getroot()
-	vaultPath = root[1].text
+def encryptVaultTable(vaultKeyPath):
 	with open(vaultKeyPath,'rb') as mykey:
 		key = mykey.read()
 	f = Fernet(key)
-	with open(vaultPath,'wb') as vault:
-		json.dump(tmpTable,vault)
+	vaultPath = getVaultPath()
 	with open(vaultPath,'rb') as unencryptedVault:
 		unencrypted = unencryptedVault.read()
 	encrypted = f.encrypt(unencrypted)
 	with open(vaultPath,'wb') as encryptedVault:
 		encryptedVault.write(encrypted)
+
+def getVaultTable(vaultKeyPath): #decrypt vault table first
+	vaultPath = getVaultPath()
+	with open(vaultKeyPath,'rb') as mykey:
+		key = mykey.read()
+	f = Fernet(key)
+	with open(vaultPath,'rb') as encryptedVault:
+		encrypted = encryptedVault.read()
+	decrypted = f.decrypt(encrypted)
+	return json.loads(decrypted)
+
+def updateVaultTable(vaultKeyPath):
+	tmp = {}
+	tmp = getVaultTable(vaultKeyPath)
+	keyName = read('site alias? (i.e. "reddit")\n')
+	tmp['passwords']['reddit'] = getUserPW()
+	setVaultTable(tmp,vaultKeyPath)
+
+def setVaultTable(tmpTable,vaultKeyPath): #save dict to json and encrypt with key
+	vaultPath = getVaultPath()
+	with open(vaultKeyPath,'rb') as mykey:
+		key = mykey.read()
+	f = Fernet(key)
+	#TO-DO: error handling -- make sure file is locked
+	with open(vaultPath,'wb') as vault:
+		json.dump(tmpTable,vault)
+	encryptVaultTable(vaultKeyPath)
 
 class vaultTable:
 	def __init__(self,config):
@@ -117,18 +137,19 @@ def main():
 	else:
 		print('invalid path')
 		vaultKeyPath.append('./.hide/vault.key')	
-	print('Using key path: %s' % vaultKeyPath[0])
-	print(getVaultTable(vaultKeyPath[0]))
 	while(1):
 		cmd = read('run cmd\n')
 		if cmd == 'genPass':
 			generateNewPW()
-			#TO-DO: add option to update record in vault with new password
-			#TESTING:
-			test1 = { "testname" : "akshat", "test2name" : "manjeet", "test3name" : "nikhil" }
-			setVaultTable(json.dumps(test1),vaultKeyPath[0])
+		elif cmd == 'getVault':
+			print(json.dumps(getVaultTable(vaultKeyPath[0]),sort_keys=True,indent=4))
 		elif cmd == 'genVaultKey':
 			generateVaultKey(vaultKeyPath[0])
+		elif cmd == 'updateVault':
+			updateVaultTable(vaultKeyPath[0])
+		#!!TESTING ONLY:
+		# elif cmd == 'encryptVault':
+		# 	encryptVaultTable(vaultKeyPath[0])			
 		elif cmd == 'updateKeyPath':
 			print(vaultKeyPath[0])
 			vaultKeyPath[0] = updateKeyPath()
