@@ -3,11 +3,8 @@ from threading import Thread, Lock
 from getpass import getpass as gp
 from cryptography.fernet import Fernet
 import xml.etree.ElementTree as ET
-from pygments import highlight, lexers, formatters
 
-#TODO: password vault updating
-#Will contain dictionary of urls and passwords
-#Encrypt dictionary as string -- need to pick encoding for string (?)
+#TODO: logging/error handling
 
 def read(prompt):
 	if sys.version_info[0] == 2:
