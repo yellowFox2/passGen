@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cnfg>
+	<errLogPath>/home/joseph/Desktop/passGen/passGen/log/err.log</errLogPath>
+	<vaultPath>/home/joseph/Desktop/passGen/passGen/.vault/vault.json</vaultPath>
+</cnfg>
