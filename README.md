@@ -10,7 +10,7 @@ simple password generator/vault. Easily generate and store passwords in encrypte
 4. type "encryptVault"
 5. type "quit"
 6. rename and (preferrably) move .\.vault\new-vault.json file to a secure location
-7. update <vaultPath> element in .\config\config.xml to reflect new name and file location
+7. update vaultPath element in .\config\config.xml to reflect new name and file location
 8. rename and move new-vault.key to secure location. If you choose not to move the key, rename it to "vault.key" and keep in project directory for the script to run with no arguments
 ** it is highly recommended to move new-vault.key file. After moving file, you can reference it at runtime using "--key=<path/to/key/keyname.key>"
 
