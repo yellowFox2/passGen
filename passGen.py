@@ -17,13 +17,22 @@ def generateVaultKey(vaultKeyPath): #only once. used to access vault table
 	key = Fernet.generate_key()
 	with open(vaultKeyPath, 'wb') as mykey: #have user input location of key (secure input string)
 	    mykey.write(key)
+	return vaultKeyPath
 
 def storeVaultKey(): #store private key locally (somewhere safe)
 	pass
 
 def getVaultPath():
-	xmlPath = os.path.dirname(os.path.abspath(__file__)) + '/config/config.xml'
-	xml = ET.parse(xmlPath)
+	args = getArgs()
+	if args.config:
+		if os.path.exists(args.config):
+			xml = ET.parse(args.config)
+		else:
+			xmlPath = os.path.dirname(os.path.abspath(__file__)) + '/config/config.xml'
+			xml = ET.parse(xmlPath)
+	else:
+		xmlPath = os.path.dirname(os.path.abspath(__file__)) + '/config/config.xml'
+		xml = ET.parse(xmlPath)
 	root = xml.getroot()
 	return root[1].text
 
@@ -120,9 +129,20 @@ def updateKeyPath():
 		print('path does not exist')
 		return updateKeyPath()
 
+def createVault(vaultKeyPath):
+	tmp = { "passwords" : {"tmp":"none"} }
+	with open('./.vault/new-vault.json','w+') as f:
+		json.dump(tmp,f)
+	f.close()
+	print('vault created at ./.vault/\n')
+	newVaultKeyPath = './.hide/new-vault.key'
+	generateVaultKey(newVaultKeyPath)
+	return newVaultKeyPath
+
 def getArgs():
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-k','--key')
+	parser.add_argument('-c','--config')
 	return parser.parse_args()
 
 def main():
@@ -139,15 +159,21 @@ def main():
 		cmd = read('run cmd\n')
 		if cmd == 'genPass':
 			generateNewPW()
-		elif cmd == 'getVault':
-			print(json.dumps(getVaultTable(vaultKeyPath[0]),sort_keys=True,indent=4))
+		elif cmd == 'vaultInit':
+			vaultKeyPath[0] = createVault(vaultKeyPath[0])
+			print(vaultKeyPath[0])
+		elif cmd == 'getVault':		
+			try:
+				print(json.dumps(getVaultTable(vaultKeyPath[0]),sort_keys=True,indent=4))
+			except:
+				print(getVaultTable(vaultKeyPath[0]))
 		elif cmd == 'genVaultKey':
+			print(vaultKeyPath[0])
 			generateVaultKey(vaultKeyPath[0])
 		elif cmd == 'updateVault':
 			updateVaultTable(vaultKeyPath[0])
-		#!!TESTING ONLY:
-		# elif cmd == 'encryptVault':
-		# 	encryptVaultTable(vaultKeyPath[0])			
+		elif cmd == 'encryptVault':
+			encryptVaultTable(vaultKeyPath[0])			
 		elif cmd == 'updateKeyPath':
 			print(vaultKeyPath[0])
 			vaultKeyPath[0] = updateKeyPath()
