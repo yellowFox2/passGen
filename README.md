@@ -1,5 +1,5 @@
 # passGen
-simple password generator/vault. Easily generate and store passwords in encrypted file. Good for keeping passwords on a secure drive location -- encrypted thumb drives preferrably
+CLI password generator/vault. Easily generate and store passwords in encrypted file. Good for keeping passwords on a secure drive location -- encrypted thumb drives preferrably
 # Requirements
 1. python 2.7
 2. cryptography module (https://pypi.org/project/cryptography/)
