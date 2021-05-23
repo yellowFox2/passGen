@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cnfg>
-	<errLogPath>E:\tmp\passGen\log\err.log</errLogPath>
-	<vaultPath>E:\tmp2\passGen\.vault\new-vault.json</vaultPath>
+	<vaultPath></vaultPath>
 </cnfg>

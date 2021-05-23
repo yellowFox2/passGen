@@ -1,26 +1,31 @@
-import hashlib, time, random, sys, os, argparse, json
-from threading import Thread, Lock
+import hashlib, random, sys, os, argparse, json
 from getpass import getpass as gp
 from cryptography.fernet import Fernet
 import xml.etree.ElementTree as ET
 
-#TODO: logging/error handling
+def updateVaultTable(vaultKeyPath):
+	tmp = {}
+	tmp = getVaultTable(vaultKeyPath)
+	keyName = read('site alias? (i.e. "reddit")\n')
+	tmp['passwords'][keyName] = read('enter pw:\n')
+	vaultPath = getVaultPath()
+	with open(vaultKeyPath,'rb') as mykey:
+		key = mykey.read()
+	f = Fernet(key)
+	#TO-DO: error handling -- make sure file is locked
+	with open(vaultPath,'w') as vault:
+		json.dump(tmp,vault)
+	encryptVaultTable(vaultKeyPath)
 
-def read(prompt):
-	if sys.version_info[0] == 2:
-		return raw_input(prompt)
-	else:
-		return input(prompt)
-
-def generateVaultKey(vaultKeyPath): #only once. used to access vault table
-	print('generating vault.key....')
-	key = Fernet.generate_key()
-	with open(vaultKeyPath, 'wb') as mykey: #have user input location of key (secure input string)
-	    mykey.write(key)
-	return vaultKeyPath
-
-def storeVaultKey(): #store private key locally (somewhere safe)
-	pass
+def getVaultTable(vaultKeyPath):
+	vaultPath = getVaultPath()
+	with open(vaultKeyPath,'rb') as mykey:
+		key = mykey.read()
+	f = Fernet(key)
+	with open(vaultPath,'rb') as encryptedVault:
+		encrypted = encryptedVault.read()
+	decrypted = f.decrypt(encrypted)
+	return json.loads(decrypted)
 
 def getVaultPath():
 	args = getArgs()
@@ -34,7 +39,9 @@ def getVaultPath():
 		xmlPath = os.path.dirname(os.path.abspath(__file__)) + '/config/config.xml'
 		xml = ET.parse(xmlPath)
 	root = xml.getroot()
-	return root[1].text
+	if root[0].text == None:
+		return os.path.dirname(os.path.abspath(__file__)) + '/.vault/vault.json'
+	return root[0].text
 
 def encryptVaultTable(vaultKeyPath):
 	with open(vaultKeyPath,'rb') as mykey:
@@ -47,37 +54,37 @@ def encryptVaultTable(vaultKeyPath):
 	with open(vaultPath,'wb') as encryptedVault:
 		encryptedVault.write(encrypted)
 
-def getVaultTable(vaultKeyPath): #decrypt vault table first
-	vaultPath = getVaultPath()
-	with open(vaultKeyPath,'rb') as mykey:
-		key = mykey.read()
-	f = Fernet(key)
-	with open(vaultPath,'rb') as encryptedVault:
-		encrypted = encryptedVault.read()
-	decrypted = f.decrypt(encrypted)
-	return json.loads(decrypted)
+def generateVaultKey(vaultKeyPath):
+	print('generating vault.key....')
+	key = Fernet.generate_key()
+	with open(vaultKeyPath, 'wb') as mykey:
+	    mykey.write(key)
+	return vaultKeyPath
 
-def updateVaultTable(vaultKeyPath):
-	tmp = {}
-	tmp = getVaultTable(vaultKeyPath)
-	keyName = read('site alias? (i.e. "reddit")\n')
-	#tmp['passwords'][keyName] = getUserPW()
-	tmp['passwords'][keyName] = read('enter pw:\n')
-	setVaultTable(tmp,vaultKeyPath)
+def createVault(vaultKeyPath):
+	tmp = { "passwords" : {"tmp":"none"} }
+	if os.path.exists('./.vault/vault.json'):
+		print('!!!! WARNING: a vault already exists at ./vault/vault.json')
+		option = read('Continue? This will overwrite vault existing at ./vault/vault.json [y/n]: ')
+		if option.lower() == 'y':
+			os.remove(vaultKeyPath)
+			os.remove('./.vault/vault.json')
+		elif option.lower() == 'n':
+			print('Aborting vault creation....\n')
+			return vaultKeyPath
+		else:
+			print('No option selected')
+			return vaultKeyPath
+	with open('./.vault/vault.json','w+') as f:
+		json.dump(tmp,f)
+	f.close()
+	print('vault created at ./.vault/\n')
+	newVaultKeyPath = './.hide/vault.key'
+	generateVaultKey(newVaultKeyPath)
+	return newVaultKeyPath
 
-def setVaultTable(tmpTable,vaultKeyPath): #save dict to json and encrypt with key
-	vaultPath = getVaultPath()
-	with open(vaultKeyPath,'rb') as mykey:
-		key = mykey.read()
-	f = Fernet(key)
-	#TO-DO: error handling -- make sure file is locked
-	with open(vaultPath,'w') as vault:
-		json.dump(tmpTable,vault)
-	encryptVaultTable(vaultKeyPath)
-
-class vaultTable:
-	def __init__(self,config):
-		pass
+def hashInputPlusSalt(userInput,saltVal):
+	return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
 
 class salt:
 	def setIntSize(self):
@@ -102,14 +109,11 @@ class salt:
 		self.setIntSize()
 		self.setSalt()
 
-def hashInputPlusSalt(userInput,saltVal):
-	return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
-
-def getUserPW():
-	return gp('Enter pw\n')
+def getPWseed():
+	return gp('Enter password seed: ')
 
 def generateNewPW():
-	tmp = getUserPW()
+	tmp = getPWseed()
 	index = int(round(random.randrange(0,999)))
 	i = 0
 	literalHashTable = []
@@ -119,25 +123,11 @@ def generateNewPW():
 		i += 1
 	print('new password: ',literalHashTable[index])
 
-def updateKeyPath():
-	tmp = read('enter new key path:\n')
-	if tmp == 'quit':
-		return
-	elif os.path.exists(tmp):
-		return tmp
+def read(prompt):
+	if sys.version_info[0] == 2:
+		return raw_input(prompt)
 	else:
-		print('path does not exist')
-		return updateKeyPath()
-
-def createVault(vaultKeyPath):
-	tmp = { "passwords" : {"tmp":"none"} }
-	with open('./.vault/new-vault.json','w+') as f:
-		json.dump(tmp,f)
-	f.close()
-	print('vault created at ./.vault/\n')
-	newVaultKeyPath = './.hide/new-vault.key'
-	generateVaultKey(newVaultKeyPath)
-	return newVaultKeyPath
+		return input(prompt)
 
 def getArgs():
 	parser = argparse.ArgumentParser()
@@ -156,27 +146,26 @@ def main():
 		print('invalid path')
 		vaultKeyPath.append('./.hide/vault.key')	
 	while(1):
-		cmd = read('run cmd\n')
+		cmd = read('\n==passGen==\n\nOptions:\ngenPass = generate 64 char password\nvaultInit = create new vault\ngetVault = read vault values\nupdateVault = add vault value\nquit = close session\n\nInput command: ')
 		if cmd == 'genPass':
 			generateNewPW()
 		elif cmd == 'vaultInit':
 			vaultKeyPath[0] = createVault(vaultKeyPath[0])
+			encryptVaultTable(vaultKeyPath[0])
 			print(vaultKeyPath[0])
-		elif cmd == 'getVault':		
-			try:
-				print(json.dumps(getVaultTable(vaultKeyPath[0]),sort_keys=True,indent=4))
-			except:
-				print(getVaultTable(vaultKeyPath[0]))
-		elif cmd == 'genVaultKey':
-			print(vaultKeyPath[0])
-			generateVaultKey(vaultKeyPath[0])
+		elif cmd == 'getVault':	
+			if not os.path.exists(vaultKeyPath[0]):
+				print('ERROR: No vault key found at ', vaultKeyPath[0])
+			else:
+				try:
+					print(json.dumps(getVaultTable(vaultKeyPath[0]),sort_keys=True,indent=4))
+				except:
+					print(getVaultTable(vaultKeyPath[0]))
 		elif cmd == 'updateVault':
-			updateVaultTable(vaultKeyPath[0])
-		elif cmd == 'encryptVault':
-			encryptVaultTable(vaultKeyPath[0])			
-		elif cmd == 'updateKeyPath':
-			print(vaultKeyPath[0])
-			vaultKeyPath[0] = updateKeyPath()
+			if not os.path.exists(vaultKeyPath[0]):
+				print('ERROR: No vault key found at ', vaultKeyPath[0])
+			else:
+				updateVaultTable(vaultKeyPath[0])		
 		elif cmd == 'quit':
 			break
 		else:
