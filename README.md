@@ -12,7 +12,7 @@ Supported on Windows, MacOS, Linux
 5. rename and (preferrably) move .\\.vault\vault.json file to a secure location
 6. update vaultPath element in .\config\config.xml to reflect new name and file location
 7. rename and move vault.key (stored in .\\.hide\) to secure location
-** it is highly recommended to move vault.key file. After moving file, you can reference it at runtime using "--key=<path/to/key/keyname.key>"
+** it is highly recommended to move vault.key file. After moving file, you can reference it at runtime using "--key=<path\to\key\keyname.key>"
 # Options
 * To generate a new password, type "genPass" and type password seed
 * To update vault, type "updateVault" and input site alias and password -- copy and paste from password created with "genPass"
