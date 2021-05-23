@@ -75,6 +75,8 @@ def createVault(vaultKeyPath):
 		else:
 			print('No option selected')
 			return vaultKeyPath
+	if not os.path.exists('./.vault'):
+		os.mkdir('./.vault')
 	with open('./.vault/vault.json','w+') as f:
 		json.dump(tmp,f)
 	f.close()
