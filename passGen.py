@@ -6,11 +6,8 @@ from getpass import getpass as gp
 def hashInputPlusSalt(userInput,saltVal):
 	return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
 
-def getPWseed():
-	return gp('Enter password seed: ')
-
 def generateNewPW():
-	tmp = getPWseed()
+	tmp = gp('Enter password seed: ')
 	index = int(round(random.randrange(0,999)))
 	i = 0
 	literalHashTable = []
@@ -39,12 +36,12 @@ def main():
         if cmd == 'genPass':
             generateNewPW()
         elif cmd == 'vaultInit':
-            if os.path.exists('./.vault/vault.json'):
-                print('!!!! WARNING: a vault already exists at ./vault/vault.json')
-                option = read('Continue? This will overwrite vault existing at ./vault/vault.json [y/n]: ')
+            if os.path.exists(vault.getRelScriptPath() + '\.vault\\vault.json'):
+                print('!!!! WARNING: a vault already exists at .\\vault\\vault.json')
+                option = read('Continue? This will overwrite vault existing at .\\vault\\vault.json [y/n]: ')
                 if option.lower() == 'y':
                     os.remove(vault.getVaultKeyPath())
-                    os.remove('./.vault/vault.json')
+                    os.remove(vault.getRelScriptPath() + '\.vault\\vault.json')
                     vault.createVaultTable()
                 elif option.lower() == 'n':
                     print('Aborting vault creation....\n')
