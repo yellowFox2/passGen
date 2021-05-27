@@ -62,7 +62,7 @@ class vaultTable:
         with open(self.getRelScriptPath() + '\.vault\\vault.json','w+') as f:
             json.dump(tmp,f)
         f.close()
-        print('vault created at .\.vault\n')
+        print('vault created at ' + self.getRelScriptPath() + '\.vault\n')
         self.setVaultKeyPath(self.getArgs())
         self.generateVaultKey()
         self.encryptVaultTable()

@@ -40,7 +40,8 @@ def main():
                 print('!!!! WARNING: a vault already exists at .\\vault\\vault.json')
                 option = read('Continue? This will overwrite vault existing at .\\vault\\vault.json [y/n]: ')
                 if option.lower() == 'y':
-                    os.remove(vault.getVaultKeyPath())
+                    if os.path.exists(vault.getVaultKeyPath()):
+                        os.remove(vault.getVaultKeyPath())
                     os.remove(vault.getRelScriptPath() + '\.vault\\vault.json')
                     vault.createVaultTable()
                 elif option.lower() == 'n':
