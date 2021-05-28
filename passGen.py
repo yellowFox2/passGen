@@ -54,19 +54,15 @@ def main():
         for options in optionsIter:
             if cmd == 'genPass':
                 generateNewPW()
-                foundBool = True
                 break
             elif cmd == 'quit':
                 nextIter = False
-                foundBool = True
                 break
             elif cmd == options[0]:
                 if not cmd == 'genPass' or not cmd == 'quit':
                     getattr(vault,options[1])()
                     foundBool = True
                     break
-                else:
-                    foundbool = False
             else:
                 foundBool = False
         if not foundBool:
