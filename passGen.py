@@ -44,6 +44,7 @@ def getArgs():
 
 def main():
     nextIter = True
+    foundBool = True
     vault = vaultTable(getArgs())
     while(1):
         cmd = read('\n==passGen==\n\nOptions:\ngenPass = generate 64 char password\nvaultInit = create new vault\ngetVault = read vault values\nupdateVault = add vault value\nquit = close session\n\nInput command: ')
@@ -51,16 +52,25 @@ def main():
         options = parseXML((vault.getRelScriptPath() + '\config\\config.xml')).items()
         optionsIter = iter(options)
         for options in optionsIter:
-            if cmd == options[0]:
-                if cmd == 'genPass':
-                    generateNewPW()
-                elif cmd == 'quit':
-                    nextIter = False
-                    break
-                elif not cmd == 'genPass' or not cmd == 'quit':
+            if cmd == 'genPass':
+                generateNewPW()
+                foundBool = True
+                break
+            elif cmd == 'quit':
+                nextIter = False
+                foundBool = True
+                break
+            elif cmd == options[0]:
+                if not cmd == 'genPass' or not cmd == 'quit':
                     getattr(vault,options[1])()
+                    foundBool = True
+                    break
                 else:
-                    print('CMD NOT FOUND\n')
+                    foundbool = False
+            else:
+                foundBool = False
+        if not foundBool:
+            print('\nERROR: Command not found\n') 
         if not nextIter:
             break
 if __name__ == '__main__':
