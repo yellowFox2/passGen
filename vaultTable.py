@@ -26,19 +26,10 @@ class vaultTable:
             self.encryptVaultTable()
 
     def printVaultTable(self):
-        if os.path.exists(self.getVaultKeyPath()):
-            with open(self.getVaultKeyPath(),'rb') as mykey:
-                key = mykey.read()
-            f = Fernet(key)
-            with open(self.getVaultPath(),'rb') as encryptedVault:
-                encrypted = encryptedVault.read()
-            decrypted = f.decrypt(encrypted)
             try:
-                print(json.dumps(json.loads(decrypted),sort_keys=True,indent=4))
+                print(json.dumps(self.getVaultTable(),sort_keys=True,indent=4))
             except:
-                print(json.loads(decrypted))
-        else:
-            print('ERROR: No vault key found at ', self.getVaultKeyPath())
+                print(self.getVaultTable())
             
     def getVaultTable(self):
         if os.path.exists(self.getVaultKeyPath()):
