@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cnfg>
 	<vaultPath></vaultPath>
+	<options>
+		<option name="genPass" function="generateNewPW"/>
+		<option name="vaultInit" function="createVaultTable"/>
+		<option name="getVault" function="printVaultTable"/>
+		<option name="updateVault" function="updateVaultTable"/>
+		<option name="quit" function="break"/>
+	</options>
 </cnfg>

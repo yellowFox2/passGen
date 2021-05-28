@@ -2,6 +2,7 @@ import hashlib, random, sys, os, argparse, json
 from salt import salt
 from vaultTable import vaultTable
 from getpass import getpass as gp
+import xml.etree.ElementTree as ET
 
 def hashInputPlusSalt(userInput,saltVal):
 	return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
@@ -15,7 +16,19 @@ def generateNewPW():
 		saltObj = salt()
 		literalHashTable.append(hashInputPlusSalt(tmp,saltObj.getSalt()))
 		i += 1
-	print('new password: ',literalHashTable[index])
+	print('New password: ',literalHashTable[index])
+
+def parseXML(xmlPath):
+    xml = ET.parse(xmlPath)
+    root = xml.getroot()
+    options = root.findall("./options/option")
+    optionsList = []
+    for option in options:
+        optionsList.append(option.attrib) 
+    tmp = {}
+    for keyPair in optionsList:
+        tmp[keyPair['name']] = keyPair['function']      
+    return tmp
 
 def read(prompt):
 	if sys.version_info[0] == 2:
@@ -30,45 +43,25 @@ def getArgs():
 	return parser.parse_args()
 
 def main():
+    nextIter = True
     vault = vaultTable(getArgs())
     while(1):
         cmd = read('\n==passGen==\n\nOptions:\ngenPass = generate 64 char password\nvaultInit = create new vault\ngetVault = read vault values\nupdateVault = add vault value\nquit = close session\n\nInput command: ')
-        if cmd == 'genPass':
-            generateNewPW()
-        elif cmd == 'vaultInit':
-            if os.path.exists(vault.getRelScriptPath() + '\.vault\\vault.json'):
-                print('!!!! WARNING: a vault already exists at .\\vault\\vault.json')
-                option = read('Continue? This will overwrite vault existing at .\\vault\\vault.json [y/n]: ')
-                if option.lower() == 'y':
-                    if os.path.exists(vault.getVaultKeyPath()):
-                        os.remove(vault.getVaultKeyPath())
-                    os.remove(vault.getRelScriptPath() + '\.vault\\vault.json')
-                    vault.createVaultTable()
-                elif option.lower() == 'n':
-                    print('Aborting vault creation....\n')
+        options = {}
+        options = parseXML((vault.getRelScriptPath() + '\config\\config.xml')).items()
+        optionsIter = iter(options)
+        for options in optionsIter:
+            if cmd == options[0]:
+                if cmd == 'genPass':
+                    generateNewPW()
+                elif cmd == 'quit':
+                    nextIter = False
+                    break
+                elif not cmd == 'genPass' or not cmd == 'quit':
+                    getattr(vault,options[1])()
                 else:
-                    print('No option selected')
-            else:
-                vault.createVaultTable()
-        elif cmd == 'getVault':	
-            if not os.path.exists(vault.getVaultKeyPath()):
-                print('ERROR: No vault key found at ', vault.getVaultKeyPath())
-            else:
-                try:
-                    print(json.dumps(vault.getVaultTable(),sort_keys=True,indent=4))
-                except:
-                    print(vault.getVaultTable())
-        elif cmd == 'updateVault':
-            if not os.path.exists(vault.getVaultKeyPath()):
-                print('ERROR: No vault key found at ', vault.getVaultKeyPath())
-            else:
-                siteAlias = read('site alias? (i.e. "reddit")\n')
-                pw = read('enter pw:\n')
-                vault.updateVaultTable(siteAlias,pw)		
-        elif cmd == 'quit':
+                    print('CMD NOT FOUND\n')
+        if not nextIter:
             break
-        else:
-            print('no option selected')
-
 if __name__ == '__main__':
-	main()
+    main()
