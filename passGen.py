@@ -59,7 +59,7 @@ def main():
                 options = parseXML(args.config).items()
             except:
                 print('Config argument: ' + str(args.config) + '"' + ' not found....\n')
-                options = parseXML((vault.getRelScriptPath() + '\config\\config.xml')).items()
+                options = parseXML((vault.getRelScriptPath() + '/config/config.xml')).items()
             optionsIter = iter(options)
             for options in optionsIter:
                 if cmd == options[0]:

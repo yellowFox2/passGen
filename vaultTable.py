@@ -46,19 +46,19 @@ class vaultTable:
     def generateVaultKey(self):
         print('generating vault.key....')
         key = Fernet.generate_key()
-        with open(self.getRelScriptPath() + '\.hide\\vault.key', 'wb') as mykey:
+        with open(self.getRelScriptPath() + '/.hide/vault.key', 'wb') as mykey:
             mykey.write(key)
 
     def createVaultTable(self):
         createVaultBool = True      
-        if os.path.exists(self.getRelScriptPath() + '\.vault\\vault.json'):
-            print('!!!! WARNING: a vault already exists at ' + self.getRelScriptPath() + '\\.vault\\vault.json')
-            inputMsg = 'Continue? This will overwrite vault existing at ' + self.getRelScriptPath() + '\\.vault\\vault.json [y/n]: '
+        if os.path.exists(self.getRelScriptPath() + '/.vault/vault.json'):
+            print('!!!! WARNING: a vault already exists at ' + self.getRelScriptPath() + '/.vault/vault.json')
+            inputMsg = 'Continue? This will overwrite vault existing at ' + self.getRelScriptPath() + '/.vault/vault.json [y/n]: '
             option = self.read(inputMsg)
             if option.lower() == 'y':
                 if os.path.exists(self.getVaultKeyPath()):
                     os.remove(self.getVaultKeyPath())
-                os.remove(self.getRelScriptPath() + '\.vault\\vault.json')
+                os.remove(self.getRelScriptPath() + '/.vault/vault.json')
             elif option.lower() == 'n':
                 createVaultBool = False
                 print('Aborting vault creation....\n')
@@ -67,14 +67,14 @@ class vaultTable:
                 print('No option selected')      
         if createVaultBool == True:
             tmp = { "passwords" : {"tmp":"none"} }
-            if not os.path.exists(self.getRelScriptPath() + '\.vault'):
-                os.mkdir(self.getRelScriptPath() + '\.vault')
-            with open(self.getRelScriptPath() + '\.vault\\vault.json','w+') as f:
+            if not os.path.exists(self.getRelScriptPath() + '/.vault'):
+                os.mkdir(self.getRelScriptPath() + '/.vault')
+            with open(self.getRelScriptPath() + '/.vault/vault.json','w+') as f:
                 json.dump(tmp,f)
             f.close()
-            print('vault created at ' + self.getRelScriptPath() + '\.vault\n')
-            self.setVaultKeyPath(self.getRelScriptPath() + '\.hide\\vault.key')
-            self.setVaultPath(self.getRelScriptPath() + '\.vault\\vault.json')
+            print('vault created at ' + self.getRelScriptPath() + '/.vault\n')
+            self.setVaultKeyPath(self.getRelScriptPath() + '/.hide/vault.key')
+            self.setVaultPath(self.getRelScriptPath() + '/.vault/vault.json')
             self.generateVaultKey()
             self.encryptVaultTable()
     
@@ -92,7 +92,7 @@ class vaultTable:
                 self.vaultKeyPath = str(path[0])
                 return
  
-        self.vaultKeyPath = self.getRelScriptPath() + '\.hide\\vault.key'
+        self.vaultKeyPath = self.getRelScriptPath() + '/.hide/vault.key'
     
     def getVaultKeyPath(self):
         return self.vaultKeyPath
@@ -116,7 +116,7 @@ class vaultTable:
             if os.path.exists(path[0]):
                 self.vaultPath = str(path[0])
                 return
-        self.vaultPath = self.getRelScriptPath() + '\.vault\\vault.json'
+        self.vaultPath = self.getRelScriptPath() + '/.vault/vault.json'
     
     def getVaultPath(self):
         return self.vaultPath
