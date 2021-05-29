@@ -26,38 +26,12 @@ class vaultTable:
             self.encryptVaultTable()
 
     def printVaultTable(self):
-            try:
-                print(json.dumps(self.getVaultTable(),sort_keys=True,indent=4))
-            except:
-                print(self.getVaultTable())
+            if self.getVaultTable():
+                try:
+                    print(json.dumps(self.getVaultTable(),sort_keys=True,indent=4))
+                except:
+                    print(self.getVaultTable())
             
-    def getVaultTable(self):
-        if os.path.exists(self.getVaultKeyPath()):
-            with open(self.getVaultKeyPath(),'rb') as mykey:
-                key = mykey.read()
-            f = Fernet(key)
-            with open(self.getVaultPath(),'rb') as encryptedVault:
-                encrypted = encryptedVault.read()
-            decrypted = f.decrypt(encrypted)
-            return json.loads(decrypted)
-        else:
-            print('ERROR: No vault key found at ', self.getVaultKeyPath())
-
-    def getVaultPath(self):
-        if self.args.config:
-            if os.path.exists(self.args.config):
-                xml = ET.parse(self.args.config)
-            else:
-                xmlPath = self.getRelScriptPath() + '\config\\config.xml'
-                xml = ET.parse(xmlPath)
-        else:
-            xmlPath = self.getRelScriptPath() + '\config\\config.xml'
-            xml = ET.parse(xmlPath)
-        root = xml.getroot()
-        if root[0].text == None:
-            return self.getRelScriptPath() + '\.vault\\vault.json'
-        return root[0].text
-
     def encryptVaultTable(self):
         with open(self.getVaultKeyPath(),'rb') as mykey:
             key = mykey.read()
@@ -72,7 +46,7 @@ class vaultTable:
     def generateVaultKey(self):
         print('generating vault.key....')
         key = Fernet.generate_key()
-        with open(self.getVaultKeyPath(), 'wb') as mykey:
+        with open(self.getRelScriptPath() + '\.hide\\vault.key', 'wb') as mykey:
             mykey.write(key)
 
     def createVaultTable(self):
@@ -99,30 +73,71 @@ class vaultTable:
                 json.dump(tmp,f)
             f.close()
             print('vault created at ' + self.getRelScriptPath() + '\.vault\n')
-            self.setVaultKeyPath(self.getArgs())
+            self.setVaultKeyPath(self.getRelScriptPath() + '\.hide\\vault.key')
+            self.setVaultPath(self.getRelScriptPath() + '\.vault\\vault.json')
             self.generateVaultKey()
             self.encryptVaultTable()
     
-    def setVaultKeyPath(self,args):
-        if args.key == None:
-            self.vaultKeyPath = self.getRelScriptPath() + '\.hide\\vault.key'
-        elif os.path.exists(args.key):
-            self.vaultKeyPath = args.key
-        else:
-            print('invalid path')
-            self.vaultKeyPath = self.getRelScriptPath() + '\.hide\\vault.key'
+    def setVaultKeyPath(self,*path):
+        if not path:
+            if self.args.key != None:
+                if os.path.exists(self.args.key):
+                    self.vaultKeyPath = self.args.key
+                    return
+                else:
+                    print('ERROR: Vault key path given as arg != valid path\n')
+                    return
+        elif path:
+            if os.path.exists(path[0]):
+                self.vaultKeyPath = str(path[0])
+                return
+ 
+        self.vaultKeyPath = self.getRelScriptPath() + '\.hide\\vault.key'
     
     def getVaultKeyPath(self):
         return self.vaultKeyPath
+
+    def setVaultPath(self,*path):
+        if not path:
+            if self.args.config:
+                if os.path.exists(self.args.config):
+                    xml = ET.parse(self.args.config)
+                    root = xml.getroot()
+                    if os.path.exists(root[0].text):
+                        self.vaultPath = root[0].text
+                        return
+                    else:
+                        print('ERROR: Vault path given in config != valid path\n')
+                        return
+                else:
+                    print('ERROR: config path given as arg != valid path\n')
+                    return
+        elif path:
+            if os.path.exists(path[0]):
+                self.vaultPath = str(path[0])
+                return
+        self.vaultPath = self.getRelScriptPath() + '\.vault\\vault.json'
     
+    def getVaultPath(self):
+        return self.vaultPath
+        
+    def getVaultTable(self):
+        if os.path.exists(self.getVaultKeyPath()):
+            with open(self.getVaultKeyPath(),'rb') as mykey:
+                key = mykey.read()
+            f = Fernet(key)
+            with open(self.getVaultPath(),'rb') as encryptedVault:
+                encrypted = encryptedVault.read()
+            decrypted = f.decrypt(encrypted)
+            return json.loads(decrypted)
+        else:
+            print('ERROR: No vault key found at ', self.getVaultKeyPath())
+        
     def setRelScriptPath(self):
         self.relScriptPath = os.path.dirname(os.path.abspath(__file__))
         
     def getRelScriptPath(self):
         return self.relScriptPath
-    
-    def getVaultKeyPath(self):
-        return self.vaultKeyPath
         
     def setArgs(self,args):
         self.args = args
@@ -133,4 +148,5 @@ class vaultTable:
     def __init__(self,args):
         self.setRelScriptPath()
         self.setArgs(args)
-        self.setVaultKeyPath(self.getArgs())
+        self.setVaultPath()
+        self.setVaultKeyPath()

@@ -45,29 +45,30 @@ def getArgs():
 def main():
     nextIter = True
     foundBool = True
-    vault = vaultTable(getArgs())
+    args = getArgs()
+    vault = vaultTable(args)
     while(1):
         cmd = read('\n==passGen==\n\nOptions:\ngenPass = generate 64 char password\nvaultInit = create new vault\ngetVault = read vault values\nupdateVault = add vault value\nquit = close session\n\nInput command: ')
-        options = {}
-        options = parseXML((vault.getRelScriptPath() + '\config\\config.xml')).items()
-        optionsIter = iter(options)
-        for options in optionsIter:
-            if cmd == 'genPass':
-                generateNewPW()
-                break
-            elif cmd == 'quit':
-                nextIter = False
-                break
-            elif cmd == options[0]:
-                if not cmd == 'genPass' or not cmd == 'quit':
+        if cmd == 'genPass':
+            generateNewPW()
+        elif cmd == 'quit':
+            break
+        else:
+            options = {}
+            try:
+                options = parseXML(args.config).items()
+            except:
+                print('Config argument: ' + str(args.config) + '"' + ' not found....\n')
+                options = parseXML((vault.getRelScriptPath() + '\config\\config.xml')).items()
+            optionsIter = iter(options)
+            for options in optionsIter:
+                if cmd == options[0]:
                     getattr(vault,options[1])()
                     foundBool = True
                     break
-            else:
-                foundBool = False
-        if not foundBool:
-            print('\nERROR: Command not found\n') 
-        if not nextIter:
-            break
+                else:
+                    foundBool = False
+            if not foundBool:
+                print('\nERROR: Command not found\n') 
 if __name__ == '__main__':
     main()
