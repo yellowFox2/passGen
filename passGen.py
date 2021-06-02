@@ -1,8 +1,8 @@
-import hashlib, random, sys, os, argparse, json
+import hashlib, random, sys, argparse
+import xml.etree.ElementTree as ET
+from getpass import getpass as gp
 from salt import salt
 from vaultTable import vaultTable
-from getpass import getpass as gp
-import xml.etree.ElementTree as ET
 
 def hashInputPlusSalt(userInput,saltVal):
 	return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
@@ -24,7 +24,7 @@ def parseXML(xmlPath):
     options = root.findall("./options/option")
     optionsList = []
     for option in options:
-        optionsList.append(option.attrib) 
+        optionsList.append(option.attrib)
     tmp = {}
     for keyPair in optionsList:
         tmp[keyPair['name']] = keyPair['function']      
@@ -54,8 +54,11 @@ def main():
     optionFoundBool = True
     args = getArgs()
     vault = vaultTable(args)
-    while(1):
-        cmd = read('\n==passGen==\n\nOptions:\ngenPass = generate 64 char password\nvaultInit = create new vault\ngetVault = read vault values\nupdateVault = add vault value\nquit = close session\n\nInput command: ')
+    while 1:
+        optionString = '\n==passGen==\n\nOptions:\ngenPass = generate 64 char password'
+        optionString += '\nvaultInit = create new vault\ngetVault = read vault values'
+        optionString += '\nupdateVault = add vault value\nquit = close session\n\nInput command: '
+        cmd = read(optionString)
         options = {}
         if args.config:
             options = parseXML(args.config).items()
@@ -66,13 +69,13 @@ def main():
             if cmd == options[0]:
                 try:
                     getattr(vault,options[1])()
-                except:
+                except AttributeError:
                     callableFunctions[options[1]]()
                 optionFoundBool = True
                 break
-            else:
-                optionFoundBool = False
+            optionFoundBool = False
         if not optionFoundBool:
-            print('\nERROR: Command not found\n') 
+            print('\nERROR: Command not found\n')
 if __name__ == '__main__':
     main()
+    

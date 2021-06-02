@@ -2,7 +2,7 @@ import hashlib, random
 
 class salt:
 	def setIntSize(self):
-		while(1):
+		while 1:
 			self.intSize = int(round(random.random() * 10,1))
 			if self.intSize != 0:
 				break
@@ -22,3 +22,4 @@ class salt:
 	def __init__(self):
 		self.setIntSize()
 		self.setSalt()
+        

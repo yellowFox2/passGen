@@ -1,6 +1,6 @@
 import os, json, sys
-from cryptography.fernet import Fernet
 import xml.etree.ElementTree as ET
+from cryptography.fernet import Fernet
 
 class vaultTable:
     def read(self,prompt):
@@ -53,7 +53,9 @@ class vaultTable:
         createVaultBool = True      
         if os.path.exists(self.getRelScriptPath() + '/.vault/vault.json'):
             print('!!!! WARNING: a vault already exists at ' + self.getRelScriptPath() + '/.vault/vault.json')
-            inputMsg = 'Continue? This will overwrite vault existing at ' + self.getRelScriptPath() + '/.vault/vault.json [y/n]: '
+            inputMsg = 'Continue? This will overwrite vault existing at ' 
+            inputMsg += self.getRelScriptPath() 
+            inputMsg += '/.vault/vault.json [y/n]: '
             option = self.read(inputMsg)
             if option.lower() == 'y':
                 if os.path.exists(self.getVaultKeyPath()):
@@ -65,7 +67,7 @@ class vaultTable:
             else:
                 createVaultBool = False
                 print('No option selected')      
-        if createVaultBool == True:
+        if createVaultBool is True:
             tmp = { "passwords" : {"tmp":"none"} }
             if not os.path.exists(self.getRelScriptPath() + '/.vault'):
                 os.mkdir(self.getRelScriptPath() + '/.vault')
@@ -80,13 +82,12 @@ class vaultTable:
     
     def setVaultKeyPath(self,*path):
         if not path:
-            if self.args.key != None:
+            if self.args.key is not None:
                 if os.path.exists(self.args.key):
                     self.vaultKeyPath = self.args.key
                     return
-                else:
-                    print('ERROR: Vault key path given as arg != valid path\n')
-                    return
+                print('ERROR: Vault key path given as arg != valid path\n')
+                return
         elif path:
             if os.path.exists(path[0]):
                 self.vaultKeyPath = str(path[0])
@@ -150,3 +151,4 @@ class vaultTable:
         self.setArgs(args)
         self.setVaultPath()
         self.setVaultKeyPath()
+        
