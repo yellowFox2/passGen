@@ -8,7 +8,7 @@ def hashInputPlusSalt(userInput,saltVal):
 	return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
 
 def generateNewPW():
-	tmp = gp('Enter password seed: ')
+	tmp = gp('\nEnter password seed: ')
 	index = int(round(random.randrange(0,999)))
 	i = 0
 	literalHashTable = []
@@ -16,7 +16,7 @@ def generateNewPW():
 		saltObj = salt()
 		literalHashTable.append(hashInputPlusSalt(tmp,saltObj.getSalt()))
 		i += 1
-	print('New password: ',literalHashTable[index])
+	print('\nNew password: ',literalHashTable[index])
 
 def parseXML(xmlPath):
     xml = ET.parse(xmlPath)
@@ -41,34 +41,38 @@ def getArgs():
 	parser.add_argument('-k','--key')
 	parser.add_argument('-c','--config')
 	return parser.parse_args()
+    
+def setCallableFunctions():
+    tmp = {}
+    tmp['generateNewPW'] = generateNewPW
+    tmp['quit'] = quit
+    return tmp
 
 def main():
-    nextIter = True
-    foundBool = True
+    callableFunctions = {}
+    callableFunctions = setCallableFunctions()
+    optionFoundBool = True
     args = getArgs()
     vault = vaultTable(args)
     while(1):
         cmd = read('\n==passGen==\n\nOptions:\ngenPass = generate 64 char password\nvaultInit = create new vault\ngetVault = read vault values\nupdateVault = add vault value\nquit = close session\n\nInput command: ')
-        if cmd == 'genPass':
-            generateNewPW()
-        elif cmd == 'quit':
-            break
+        options = {}
+        if args.config:
+            options = parseXML(args.config).items()
         else:
-            options = {}
-            try:
-                options = parseXML(args.config).items()
-            except:
-                print('Config argument: ' + str(args.config) + '"' + ' not found....\n')
-                options = parseXML((vault.getRelScriptPath() + '/config/config.xml')).items()
-            optionsIter = iter(options)
-            for options in optionsIter:
-                if cmd == options[0]:
+            options = parseXML((vault.getRelScriptPath() + '/config/config.xml')).items()
+        optionsIter = iter(options)
+        for options in optionsIter:
+            if cmd == options[0]:
+                try:
                     getattr(vault,options[1])()
-                    foundBool = True
-                    break
-                else:
-                    foundBool = False
-            if not foundBool:
-                print('\nERROR: Command not found\n') 
+                except:
+                    callableFunctions[options[1]]()
+                optionFoundBool = True
+                break
+            else:
+                optionFoundBool = False
+        if not optionFoundBool:
+            print('\nERROR: Command not found\n') 
 if __name__ == '__main__':
     main()

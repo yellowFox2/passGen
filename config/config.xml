@@ -2,8 +2,10 @@
 <cnfg>
 	<vaultPath></vaultPath>
 	<options>
+		<option name="genPass" function="generateNewPW"/>
 		<option name="vaultInit" function="createVaultTable"/>
 		<option name="getVault" function="printVaultTable"/>
 		<option name="updateVault" function="updateVaultTable"/>
+		<option name="quit" function="quit"/>
 	</options>
 </cnfg>
