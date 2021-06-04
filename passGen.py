@@ -5,20 +5,23 @@ from salt import salt
 from vaultTable import vaultTable
 
 def hashInputPlusSalt(userInput,saltVal):
-	return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
+    '''Get sha256 of password seed + salt'''
+    return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
 
 def generateNewPW():
-	tmp = gp('\nEnter password seed: ')
-	index = int(round(random.randrange(0,999)))
-	i = 0
-	literalHashTable = []
-	while i < 1000:
-		saltObj = salt()
-		literalHashTable.append(hashInputPlusSalt(tmp,saltObj.getSalt()))
-		i += 1
-	print('\nNew password: ',literalHashTable[index])
+    '''Prompt for password seed and generate random sha256'''
+    tmp = gp('\nEnter password seed: ')
+    index = int(round(random.randrange(0,999)))
+    i = 0
+    literalHashTable = []
+    while i < 1000:
+        saltObj = salt()
+        literalHashTable.append(hashInputPlusSalt(tmp,saltObj.getSalt()))
+        i += 1
+    print('\nNew password: ',literalHashTable[index])
 
 def parseXML(xmlPath):
+    '''Retrieve user option elements from XML as dict'''
     xml = ET.parse(xmlPath)
     root = xml.getroot()
     options = root.findall("./options/option")
@@ -30,19 +33,15 @@ def parseXML(xmlPath):
         tmp[keyPair['name']] = keyPair['function']      
     return tmp
 
-def read(prompt):
-	if sys.version_info[0] == 2:
-		return raw_input(prompt)
-	else:
-		return input(prompt)
-
 def getArgs():
-	parser = argparse.ArgumentParser()
-	parser.add_argument('-k','--key')
-	parser.add_argument('-c','--config')
-	return parser.parse_args()
+    '''Get script args'''
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-k','--key')
+    parser.add_argument('-c','--config')
+    return parser.parse_args()
     
 def setCallableFunctions():
+    '''Set user-callable functions dict'''
     tmp = {}
     tmp['generateNewPW'] = generateNewPW
     tmp['quit'] = quit
@@ -58,7 +57,7 @@ def main():
         optionString = '\n==passGen==\n\nOptions:\ngenPass = generate 64 char password'
         optionString += '\nvaultInit = create new vault\ngetVault = read vault values'
         optionString += '\nupdateVault = add vault value\nquit = close session\n\nInput command: '
-        cmd = read(optionString)
+        cmd = vault.read(optionString)
         options = {}
         if args.config:
             options = parseXML(args.config).items()

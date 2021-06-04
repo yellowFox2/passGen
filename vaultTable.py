@@ -11,7 +11,7 @@ class vaultTable:
           
     def encryptByteString(self,inputString):
         '''Encrypt a bytes object -- convert a string to bytes first -- using user referenced vault key'''
-        f = self.getVaultKeyVal()
+        f = Fernet(self.readFile(self.getVaultKeyPath()))
         return f.encrypt(inputString)
         
     def updateVaultTable(self):
@@ -36,13 +36,7 @@ class vaultTable:
                 print(json.dumps(self.getVaultTable(),sort_keys=True,indent=4))
             except ValueError:
                 print(self.getVaultTable())
-    
-    def getVaultKeyVal(self):
-        '''Return Fernet of user referenced vault key'''
-        with open(self.getVaultKeyPath(),'rb') as mykey:
-            key = mykey.read()
-            return Fernet(key)
-        
+           
     def readFile(self,filePath):
         '''Read file (bytes)'''
         with open(filePath,'rb') as f:
@@ -57,8 +51,7 @@ class vaultTable:
         '''Create Fernet key and save to default location'''
         print('generating vault.key....')
         key = Fernet.generate_key()
-        with open(self.getRelScriptPath() + '/.hide/vault.key', 'wb') as mykey:
-            mykey.write(key)
+        self.writeFile(self.getRelScriptPath() + '/.hide/vault.key',key)
 
     def createVaultTable(self):
         '''Create vault with default values at default location'''
@@ -132,7 +125,7 @@ class vaultTable:
         '''Return JSON of decrypted vault'''
         if os.path.exists(self.getVaultKeyPath()):
             try:
-                f = self.getVaultKeyVal()
+                f = Fernet(self.readFile(self.getVaultKeyPath()))
                 decrypted = f.decrypt((self.readFile(self.getVaultPath())))
                 return json.loads(decrypted)
             except (IOError, ValueError) as e:
