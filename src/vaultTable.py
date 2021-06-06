@@ -78,22 +78,17 @@ class vaultTable(file):
     def getVaultKey(self):
         return self.vaultKey
 
-    def setVaultPath(self,*path):
+    def setVaultPath(self):
         '''Set vault path to object attribute'''
-        if not path:
-            if self.args.config:
-                if os.path.exists(self.args.config):
-                    xml = ET.parse(self.args.config)
-                    root = xml.getroot()
-                    if os.path.exists(root[0].text):
-                        super().__init__(root[0].text)
-                        return
-                print('ERROR: config path given as arg != valid path\n')
-                return
-        elif path:
-            if os.path.exists(path[0]):
-                super().__init__(str(path[0]))
-                return
+        if self.args.config:
+            if os.path.exists(self.args.config):
+                xml = ET.parse(self.args.config)
+                root = xml.getroot()
+                if os.path.exists(root[0].text):
+                    super().__init__(root[0].text)
+                    return
+            print('ERROR: config path given as arg != valid path\n')
+            return
         super().__init__(self.getRelScriptPath() + '/.vault/vault.json')
         
     def getVaultTable(self):

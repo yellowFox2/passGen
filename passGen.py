@@ -20,7 +20,7 @@ def generateNewPW():
         i += 1
     print('\nNew password: ',literalHashTable[index])
 
-def parseXML(xmlPath):
+def getConfigOptions(xmlPath):
     '''Retrieve user option elements from XML as dict'''
     xml = ET.parse(xmlPath)
     root = xml.getroot()
@@ -61,9 +61,9 @@ def main():
         cmd = vault.read(optionString)
         options = {}
         if args.config:
-            options = parseXML(args.config).items()
+            options = getConfigOptions(args.config).items()
         else:
-            options = parseXML((vault.getRelScriptPath() + '/config/config.xml')).items()
+            options = getConfigOptions((vault.getRelScriptPath() + '/config/config.xml')).items()
         optionsIter = iter(options)
         for options in optionsIter:
             if cmd == options[0]:
