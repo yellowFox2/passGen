@@ -1,6 +1,7 @@
 import hashlib, random
 
 class salt:
+
 	def setIntSize(self):
 		while 1:
 			self.intSize = int(round(random.random() * 10,1))

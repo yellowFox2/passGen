@@ -1,8 +1,8 @@
 import os, json, sys
 import xml.etree.ElementTree as ET
 from cryptography.fernet import Fernet
-from vaultKey import vaultKey as VK
-from file import file
+from .vaultKey import vaultKey as VK
+from .file import file
 
 class vaultTable(file):
 
@@ -26,7 +26,6 @@ class vaultTable(file):
         try:
             self.writeFile(self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
         except (IOError, ValueError) as e:
-            print(e.errno)
             print(e)
 
     def printVaultTable(self):
@@ -104,11 +103,10 @@ class vaultTable(file):
             decrypted = f.decrypt((self.readFile()))
             return json.loads(decrypted)
         except (IOError, ValueError) as e:
-            print(e.errno)
             print(e)
         
-    def setRelScriptPath(self):
-        self.relScriptPath = os.path.dirname(os.path.abspath(__file__))
+    def setRelScriptPath(self,path):
+        self.relScriptPath = path
         
     def getRelScriptPath(self):
         return self.relScriptPath
@@ -119,8 +117,8 @@ class vaultTable(file):
     def getArgs(self):
         return self.args
     
-    def __init__(self,args):
-        self.setRelScriptPath()
+    def __init__(self,args,scriptPath):
+        self.setRelScriptPath(scriptPath)
         self.setArgs(args)
         self.setVaultPath()
         self.setVaultKey()

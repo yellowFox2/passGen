@@ -1,5 +1,5 @@
 from cryptography.fernet import Fernet
-from file import file
+from .file import file
 
 class vaultKey(file):
 

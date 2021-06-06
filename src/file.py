@@ -1,5 +1,3 @@
-import os
-
 class file:
 
     def readFile(self):

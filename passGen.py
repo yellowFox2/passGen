@@ -1,8 +1,8 @@
-import hashlib, random, sys, argparse
+import hashlib, random, sys, argparse, os
 import xml.etree.ElementTree as ET
 from getpass import getpass as gp
-from salt import salt
-from vaultTable import vaultTable
+from src.salt import salt
+from src.vaultTable import vaultTable
 
 def hashInputPlusSalt(userInput,saltVal):
     '''Get sha256 of password seed + salt'''
@@ -53,7 +53,7 @@ def main():
     callableFunctions = setCallableFunctions()
     optionFoundBool = True
     args = getArgs()
-    vault = vaultTable(args)
+    vault = vaultTable(args,os.path.dirname(os.path.abspath(__file__)))
     while 1:
         optionString = '\n==passGen==\n\nOptions:\ngenPass = generate 64 char password'
         optionString += '\nvaultInit = create new vault\ngetVault = read vault values'
