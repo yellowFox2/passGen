@@ -48,6 +48,7 @@ def setCallableFunctions():
     return tmp
 
 def main():
+    '''Run function based on user-input if option keypair found in config.xml'''
     callableFunctions = {}
     callableFunctions = setCallableFunctions()
     optionFoundBool = True

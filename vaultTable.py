@@ -1,8 +1,11 @@
 import os, json, sys
 import xml.etree.ElementTree as ET
 from cryptography.fernet import Fernet
+from vaultKey import vaultKey as VK
+from file import file
 
-class vaultTable:
+class vaultTable(file):
+
     def read(self,prompt):
         '''Call raw_input() or input() depending on running python version'''
         if sys.version_info[0] == 2:
@@ -11,23 +14,20 @@ class vaultTable:
           
     def encryptByteString(self,inputString):
         '''Encrypt a bytes object -- convert a string to bytes first -- using user referenced vault key'''
-        f = Fernet(self.readFile(self.getVaultKeyPath()))
+        f = Fernet(self.vaultKey.readFile())
         return f.encrypt(inputString)
         
     def updateVaultTable(self):
         '''Add/update vault keypair based on given user input'''
-        if not os.path.exists(self.getVaultKeyPath()):
-            print('ERROR: No vault key found at ', self.getVaultKeyPath())
-        else:
-            siteAlias = self.read('site alias? (i.e. "reddit")\n')
-            tmp = self.getVaultTable()
-            pw = self.read('enter pw:\n')
-            tmp['passwords'][siteAlias] = pw
-            try:
-                self.writeFile(self.getVaultPath(),self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
-            except (IOError, ValueError) as e:
-                print(e.errno)
-                print(e)
+        siteAlias = self.read('site alias? (i.e. "reddit")\n')
+        tmp = self.getVaultTable()
+        pw = self.read('enter pw:\n')
+        tmp['passwords'][siteAlias] = pw
+        try:
+            self.writeFile(self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
+        except (IOError, ValueError) as e:
+            print(e.errno)
+            print(e)
 
     def printVaultTable(self):
         '''Print vault to console'''
@@ -35,23 +35,7 @@ class vaultTable:
             try:
                 print(json.dumps(self.getVaultTable(),sort_keys=True,indent=4))
             except ValueError:
-                print(self.getVaultTable())
-           
-    def readFile(self,filePath):
-        '''Read file (bytes)'''
-        with open(filePath,'rb') as f:
-            return f.read()
-    
-    def writeFile(self,filePath,content):
-        '''Write to file (bytes)'''
-        with open(filePath,'wb') as f:
-            f.write(content)
-
-    def generateVaultKey(self):
-        '''Create Fernet key and save to default location'''
-        print('generating vault.key....')
-        key = Fernet.generate_key()
-        self.writeFile(self.getRelScriptPath() + '/.hide/vault.key',key)
+                print(self.getVaultTable())         
 
     def createVaultTable(self):
         '''Create vault with default values at default location'''
@@ -63,9 +47,8 @@ class vaultTable:
             inputMsg += '/.vault/vault.json [y/n]: '
             option = self.read(inputMsg)
             if option.lower() == 'y':
-                if os.path.exists(self.getVaultKeyPath()):
-                    os.remove(self.getVaultKeyPath())
-                os.remove(self.getRelScriptPath() + '/.vault/vault.json')
+                os.remove(self.getRelScriptPath() + '/.hide/vault.key') if os.path.exists(self.getRelScriptPath() + '/.hide/vault.key') else None         
+                os.remove(self.getRelScriptPath() + '/.vault/vault.json') if os.path.exists(self.getRelScriptPath() + '/.vault/vault.json') else None            
             elif option.lower() == 'n':
                 createVaultBool = False
                 print('Aborting vault creation....\n')
@@ -74,31 +57,27 @@ class vaultTable:
                 print('No option selected')      
         if createVaultBool is True:
             tmp = { "passwords" : {"tmp":"none"} }
-            if not os.path.exists(self.getRelScriptPath() + '/.vault'):
-                os.mkdir(self.getRelScriptPath() + '/.vault')            
-            self.setVaultKeyPath(self.getRelScriptPath() + '/.hide/vault.key')
-            self.setVaultPath(self.getRelScriptPath() + '/.vault/vault.json')
-            self.generateVaultKey()
-            self.writeFile(self.getVaultPath(),self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
+            os.mkdir(self.getRelScriptPath() + '/.vault') if not os.path.exists(self.getRelScriptPath() + '/.vault') else None
+            os.mkdir(self.getRelScriptPath() + '/.hide') if not os.path.exists(self.getRelScriptPath() + '/.hide') else None
+            self.vaultKey = VK(self.getRelScriptPath() + '/.hide/vault.key')
+            self.setFilePath(self.getRelScriptPath() + '/.vault/vault.json')
+            self.vaultKey.generateVaultKey()
+            self.writeFile(self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
             print('\nvault created at ' + self.getRelScriptPath() + '/.vault\n')
  
-    def setVaultKeyPath(self,*path):
-        '''Set vault key path to object attribute'''
+    def setVaultKey(self,*path):
+        '''Set vault key reference'''
         if not path:
             if self.args.key is not None:
-                if os.path.exists(self.args.key):
-                    self.vaultKeyPath = self.args.key
+                    self.vaultKey = VK(self.args.key)
                     return
-                print('ERROR: Vault key path given as arg != valid path\n')
-                return
         elif path:
-            if os.path.exists(path[0]):
-                self.vaultKeyPath = str(path[0])
-                return
-        self.vaultKeyPath = self.getRelScriptPath() + '/.hide/vault.key'
+            self.vaultKey = VK(path[0])
+            return
+        self.vaultKey = VK(self.getRelScriptPath() + '/.hide/vault.key')
     
-    def getVaultKeyPath(self):
-        return self.vaultKeyPath
+    def getVaultKey(self):
+        return self.vaultKey
 
     def setVaultPath(self,*path):
         '''Set vault path to object attribute'''
@@ -108,31 +87,25 @@ class vaultTable:
                     xml = ET.parse(self.args.config)
                     root = xml.getroot()
                     if os.path.exists(root[0].text):
-                        self.vaultPath = root[0].text
+                        super().__init__(root[0].text)
                         return
                 print('ERROR: config path given as arg != valid path\n')
                 return
         elif path:
             if os.path.exists(path[0]):
-                self.vaultPath = str(path[0])
+                super().__init__(str(path[0]))
                 return
-        self.vaultPath = self.getRelScriptPath() + '/.vault/vault.json'
-    
-    def getVaultPath(self):
-        return self.vaultPath
+        super().__init__(self.getRelScriptPath() + '/.vault/vault.json')
         
     def getVaultTable(self):
         '''Return JSON of decrypted vault'''
-        if os.path.exists(self.getVaultKeyPath()):
-            try:
-                f = Fernet(self.readFile(self.getVaultKeyPath()))
-                decrypted = f.decrypt((self.readFile(self.getVaultPath())))
-                return json.loads(decrypted)
-            except (IOError, ValueError) as e:
-                print(e.errno)
-                print(e)
-        else:
-            print('ERROR: No vault key found at ', self.getVaultKeyPath())
+        try:
+            f = Fernet(self.vaultKey.readFile())
+            decrypted = f.decrypt((self.readFile()))
+            return json.loads(decrypted)
+        except (IOError, ValueError) as e:
+            print(e.errno)
+            print(e)
         
     def setRelScriptPath(self):
         self.relScriptPath = os.path.dirname(os.path.abspath(__file__))
@@ -150,5 +123,5 @@ class vaultTable:
         self.setRelScriptPath()
         self.setArgs(args)
         self.setVaultPath()
-        self.setVaultKeyPath()
+        self.setVaultKey()
         
