@@ -64,16 +64,12 @@ class vaultTable(file):
             self.writeFile(self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
             print('\nvault created at ' + self.getRelScriptPath() + '/.vault\n')
  
-    def setVaultKey(self,*path):
+    def setVaultKey(self):
         '''Set vault key reference'''
-        if not path:
-            if self.args.key is not None:
-                    self.vaultKey = VK(self.args.key)
-                    return
-        elif path:
-            self.vaultKey = VK(path[0])
-            return
-        self.vaultKey = VK(self.getRelScriptPath() + '/.hide/vault.key')
+        if self.args.key is not None:
+                self.vaultKey = VK(self.args.key)
+        else:
+            self.vaultKey = VK(self.getRelScriptPath() + '/.hide/vault.key')
     
     def getVaultKey(self):
         return self.vaultKey
