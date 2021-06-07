@@ -1,9 +1,12 @@
+import os
+
 class file:
 
     def readFile(self):
         '''Read file (bytes)'''
-        with open(self.getFilePath(),'rb') as f:
-            return f.read()
+        if os.path.exists(self.getFilePath()):
+            with open(self.getFilePath(),'rb') as f:
+                return f.read()
     
     def writeFile(self,content):
         '''Write to file (bytes)'''

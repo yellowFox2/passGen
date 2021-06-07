@@ -19,22 +19,17 @@ class vaultTable(file):
         
     def updateVaultTable(self):
         '''Add/update vault keypair based on given user input'''
-        siteAlias = self.read('site alias? (i.e. "reddit")\n')
         tmp = self.getVaultTable()
-        pw = self.read('enter pw:\n')
-        tmp['passwords'][siteAlias] = pw
-        try:
-            self.writeFile(self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
-        except (IOError, ValueError) as e:
-            print(e)      
-
-    def printVaultTable(self):
-        '''Print vault to console'''
-        if self.getVaultTable():
-            if sys.version_info[0] == 2:
-                print(self.getVaultTable())
-            else:
-                print(json.dumps(self.getVaultTable(),sort_keys=True,indent=4))
+        if not tmp is None:
+            siteAlias = self.read('site alias? (i.e. "reddit")\n')
+            pw = self.read('enter pw:\n')
+            tmp['passwords'][siteAlias] = pw
+            try:
+                self.writeFile(self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
+            except (IOError, ValueError) as e:
+                print(e)
+        else:
+            print('\nERROR: Table not found at {}\n'.format(self.getFilePath()))
 
     def createVaultTable(self):
         '''Create vault with default values at default location'''
@@ -62,6 +57,7 @@ class vaultTable(file):
             self.setFilePath(self.getRelScriptPath() + '/.vault/vault.json')
             self.vaultKey.generateVaultKey()
             self.writeFile(self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
+            self.setVaultTable()
             print('\nvault created at {}/.vault\n'.format(self.getRelScriptPath()))
  
     def setVaultKey(self):
@@ -83,18 +79,25 @@ class vaultTable(file):
                 if os.path.exists(root[0].text):
                     super().__init__(root[0].text)
                     return
-            print('ERROR: config path given as arg != valid path\n')
-            return
         super().__init__(self.getRelScriptPath() + '/.vault/vault.json')
-        
-    def getVaultTable(self):
+    
+    def setVaultTable(self):
         '''Return JSON of decrypted vault'''
         try:
-            f = Fernet(self.vaultKey.readFile())
-            decrypted = f.decrypt((self.readFile()))
-            return json.loads(decrypted)
+            vaultKeyVal = self.vaultKey.readFile()
+            if vaultKeyVal:          
+                f = Fernet(vaultKeyVal)
+                vaultVal = self.readFile()
+                if vaultVal:
+                    decrypted = f.decrypt(vaultVal)
+                    self.vaultTable = json.loads(decrypted)
+                    return
+            self.vaultTable = None
         except (IOError, ValueError) as e:
             print(e)
+            
+    def getVaultTable(self):
+        return self.vaultTable
         
     def setRelScriptPath(self,path):
         self.relScriptPath = path
@@ -113,4 +116,15 @@ class vaultTable(file):
         self.setArgs(args)
         self.setVaultPath()
         self.setVaultKey()
+        self.setVaultTable()
+        
+    def __str__(self):
+        '''Print vault to console'''
+        if not self.getVaultTable() is None:
+            if sys.version_info[0] == 2:
+                return self.getVaultTable()
+            else:
+                return json.dumps(self.getVaultTable(),sort_keys=True,indent=4)
+        else:
+            return '\nERROR: Table not found at {}\n'.format(self.getFilePath())
         

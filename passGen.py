@@ -8,14 +8,15 @@ def runMethod(iterObj,userInput,mainMethods,classObj):
     for options in iterObj:     
         if userInput == options[0]:
             if options[1] in mainMethods:
-                mainMethods[options[1]]()
-                return 1
+                try:
+                    mainMethods[options[1]]()
+                except TypeError:
+                    mainMethods[options[1]](classObj)
             elif options[1] in dir(classObj):
                 getattr(classObj,options[1])()
-                return 1
             else:
                 print('\nERROR: Method "{}" not found. Please update config.xml\n'.format(options[1]))
-                return 1
+            return 1
     return 0
     
 def getConfigOptions(xmlPath):
@@ -42,6 +43,9 @@ def hashInputPlusSalt(userInput,saltVal):
     '''Get sha256 of password seed + salt'''
     return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
 
+def printVaultTable(classObj):
+    print(classObj)
+
 def generateNewPW():
     '''Prompt for password seed and generate random sha256'''
     tmp = gp('\nEnter password seed: ')
@@ -58,6 +62,7 @@ def setCallableMainMethods():
     '''Set user-callable methods dict'''
     tmp = {}
     tmp['generateNewPW'] = generateNewPW
+    tmp['printVaultTable'] = printVaultTable
     tmp['quit'] = quit
     return tmp
 
