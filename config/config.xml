@@ -2,10 +2,10 @@
 <cnfg>
 	<vaultPath></vaultPath>
 	<options>
-		<option name="genPass" function="generateNewPW"/>
-		<option name="vaultInit" function="createVaultTable"/>
-		<option name="getVault" function="printVaultTable"/>
-		<option name="updateVault" function="updateVaultTable"/>
-		<option name="quit" function="quit"/>
+		<option name="genPass" method="generateNewPW"/>
+		<option name="vaultInit" method="createVaultTable"/>
+		<option name="getVault" method="printVaultTable"/>
+		<option name="updateVault" method="updateVaultTable"/>
+		<option name="quit" method="quit"/>
 	</options>
 </cnfg>

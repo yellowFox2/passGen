@@ -26,21 +26,21 @@ class vaultTable(file):
         try:
             self.writeFile(self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
         except (IOError, ValueError) as e:
-            print(e)
+            print(e)      
 
     def printVaultTable(self):
         '''Print vault to console'''
         if self.getVaultTable():
-            try:
+            if sys.version_info[0] == 2:
+                print(self.getVaultTable())
+            else:
                 print(json.dumps(self.getVaultTable(),sort_keys=True,indent=4))
-            except ValueError:
-                print(self.getVaultTable())         
 
     def createVaultTable(self):
         '''Create vault with default values at default location'''
         createVaultBool = True      
         if os.path.exists(self.getRelScriptPath() + '/.vault/vault.json'):
-            print('!!!! WARNING: a vault already exists at ' + self.getRelScriptPath() + '/.vault/vault.json')
+            print('!!!! WARNING: a vault already exists at {}/.vault/vault.json'.format(self.getRelScriptPath()))
             inputMsg = 'Continue? This will overwrite vault existing at ' 
             inputMsg += self.getRelScriptPath() 
             inputMsg += '/.vault/vault.json [y/n]: '
@@ -62,7 +62,7 @@ class vaultTable(file):
             self.setFilePath(self.getRelScriptPath() + '/.vault/vault.json')
             self.vaultKey.generateVaultKey()
             self.writeFile(self.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
-            print('\nvault created at ' + self.getRelScriptPath() + '/.vault\n')
+            print('\nvault created at {}/.vault\n'.format(self.getRelScriptPath()))
  
     def setVaultKey(self):
         '''Set vault key reference'''

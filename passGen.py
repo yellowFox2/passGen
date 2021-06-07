@@ -4,6 +4,40 @@ from getpass import getpass as gp
 from src.salt import salt
 from src.vaultTable import vaultTable
 
+def runMethod(iterObj,userInput,mainMethods,classObj):
+    for options in iterObj:     
+        if userInput == options[0]:
+            if options[1] in mainMethods:
+                mainMethods[options[1]]()
+                return 1
+            elif options[1] in dir(classObj):
+                getattr(classObj,options[1])()
+                return 1
+            else:
+                print('\nERROR: Method "{}" not found. Please update config.xml\n'.format(options[1]))
+                return 1
+    return 0
+    
+def getConfigOptions(xmlPath):
+    '''Retrieve user option elements from XML as dict'''
+    xml = ET.parse(xmlPath)
+    root = xml.getroot()
+    options = root.findall("./options/option")
+    optionsList = []
+    for option in options:
+        optionsList.append(option.attrib)
+    tmp = {}
+    for keyPair in optionsList:
+        tmp[keyPair['name']] = keyPair['method']      
+    return tmp
+
+def getArgs():
+    '''Get script args'''
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-k','--key')
+    parser.add_argument('-c','--config')
+    return parser.parse_args()
+
 def hashInputPlusSalt(userInput,saltVal):
     '''Get sha256 of password seed + salt'''
     return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
@@ -18,40 +52,19 @@ def generateNewPW():
         saltObj = salt()
         literalHashTable.append(hashInputPlusSalt(tmp,saltObj.getSalt()))
         i += 1
-    print('\nNew password: ',literalHashTable[index])
-
-def getConfigOptions(xmlPath):
-    '''Retrieve user option elements from XML as dict'''
-    xml = ET.parse(xmlPath)
-    root = xml.getroot()
-    options = root.findall("./options/option")
-    optionsList = []
-    for option in options:
-        optionsList.append(option.attrib)
-    tmp = {}
-    for keyPair in optionsList:
-        tmp[keyPair['name']] = keyPair['function']      
-    return tmp
-
-def getArgs():
-    '''Get script args'''
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-k','--key')
-    parser.add_argument('-c','--config')
-    return parser.parse_args()
+    print('\nNew password: {}'.format(literalHashTable[index]))
     
-def setCallableFunctions():
-    '''Set user-callable functions dict'''
+def setCallableMainMethods():
+    '''Set user-callable methods dict'''
     tmp = {}
     tmp['generateNewPW'] = generateNewPW
     tmp['quit'] = quit
     return tmp
 
 def main():
-    '''Run function based on user-input if option keypair found in config.xml'''
-    callableFunctions = {}
-    callableFunctions = setCallableFunctions()
-    optionFoundBool = True
+    '''Run method based on user-input if option keypair found in config.xml'''
+    callableMethods = {}
+    callableMethods = setCallableMainMethods()
     args = getArgs()
     vault = vaultTable(args,os.path.dirname(os.path.abspath(__file__)))
     while 1:
@@ -65,17 +78,8 @@ def main():
         else:
             options = getConfigOptions((vault.getRelScriptPath() + '/config/config.xml')).items()
         optionsIter = iter(options)
-        for options in optionsIter:
-            if cmd == options[0]:
-                try:
-                    getattr(vault,options[1])()
-                except AttributeError:
-                    callableFunctions[options[1]]()
-                optionFoundBool = True
-                break
-            optionFoundBool = False
-        if not optionFoundBool:
-            print('\nERROR: Command not found\n')
+        print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(optionsIter,cmd,callableMethods,vault) else None
+                
 if __name__ == '__main__':
     main()
     
