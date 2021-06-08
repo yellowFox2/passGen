@@ -3,6 +3,18 @@ from .file import file
 
 class vaultKey(file):
 
+    def encryptByteString(self,inputString):
+        '''Encrypt a bytes object -- convert a string to bytes first -- using user referenced vault key'''
+        f = Fernet(self.readFile())
+        return f.encrypt(inputString)
+        
+    def decryptByteString(self,inputString):
+        '''Encrypt a bytes object -- convert a string to bytes first -- using user referenced vault key'''
+        tmp = self.readFile()
+        if tmp:
+            f = Fernet(tmp)
+            return f.decrypt(inputString)       
+
     def generateVaultKey(self):
         '''Create Fernet key and save to default location'''
         print('generating vault.key....')
