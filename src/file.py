@@ -1,5 +1,6 @@
 import os
 
+#TO-DO: More error-handling
 class file:
 
     def readFile(self):

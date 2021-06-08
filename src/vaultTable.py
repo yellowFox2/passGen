@@ -21,13 +21,15 @@ class vaultTable(file):
                 super().__init__(root[0].text)
                 return
         super().__init__(self.getRelScriptPath() + '/.vault/vault.json')
-        
+    
+    #TO-DO: Remove need to pass script path to instance
     def setRelScriptPath(self,path):
         self.relScriptPath = path
         
     def getRelScriptPath(self):
         return self.relScriptPath
-        
+    
+    #TO-DO: Remove need to pass arguments to instance
     def setArgs(self,args):
         self.args = args
         

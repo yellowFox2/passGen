@@ -1,15 +1,16 @@
 from cryptography.fernet import Fernet
 from .file import file
 
+#TO-DO: More error-handling
 class vaultKey(file):
 
     def encryptByteString(self,inputString):
-        '''Encrypt a bytes object -- convert a string to bytes first -- using user referenced vault key'''
+        '''Encrypt a bytes object -- convert a string to bytes first -- using vault key'''
         f = Fernet(self.readFile())
         return f.encrypt(inputString)
         
     def decryptByteString(self,inputString):
-        '''Encrypt a bytes object -- convert a string to bytes first -- using user referenced vault key'''
+        '''Decrypt a bytes object using vault key'''
         tmp = self.readFile()
         if tmp:
             f = Fernet(tmp)

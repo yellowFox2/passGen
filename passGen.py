@@ -1,3 +1,4 @@
+#WISHLIST: iOS/Android interface -- need to refactor for ReactJS (?), optionally host encrypted vault on IPFS -- decrypt on client-side
 import hashlib, random, sys, argparse, os, json
 import xml.etree.ElementTree as ET
 from getpass import getpass as gp
@@ -7,6 +8,7 @@ from src.vaultKey import vaultKey as VK
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
+#TO-DO: remove need for try block
 def runMethod(iterObj,userInput,mainMethods,vaultObj,keyObj):
     '''Run method if found in callableMethod dict'''
     for options in iterObj:     
@@ -20,7 +22,8 @@ def runMethod(iterObj,userInput,mainMethods,vaultObj,keyObj):
                 print('\nERROR: Method "{}" not found. Please update config.xml\n'.format(options[1]))
             return 1
     return 0
-    
+
+#TO-DO: return dictionary instead of list + optimize (?)   
 def getConfigOptions(xmlPath):
     '''Retrieve user option elements from XML as dict'''
     xml = ET.parse(xmlPath)
@@ -72,6 +75,7 @@ def read(prompt):
         return raw_input(prompt)
     return input(prompt)
 
+#TO-DO: Cleanup + remove redundancy
 def createVaultTable(vaultObj,keyObj):
         '''Create vault with default values at default location'''
         createVaultBool = True      
@@ -100,10 +104,12 @@ def createVaultTable(vaultObj,keyObj):
             vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
             print('\nvault created at {}/.vault\n'.format(SCRIPT_PATH))
 
+#TO-DO: add special chars + random capitilization
 def hashInputPlusSalt(userInput,saltVal):
     '''Get sha256 of password seed + salt'''
     return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
 
+#TO-DO: make literalHashTable size configurable + improve hash selection procedure
 def generateNewPW():
     '''Prompt for password seed and generate random sha256'''
     tmp = gp('\nEnter password seed: ')
@@ -135,8 +141,9 @@ def main():
         vaultKey = VK(args.key)
     else:
         vaultKey = VK(SCRIPT_PATH + '/.hide/vault.key')
-    vault = VT(args,SCRIPT_PATH)
+    vault = VT(args,SCRIPT_PATH) 
     while 1:
+        #TO-DO: import optionString from config.xml
         optionString = '\n==passGen==\n\nOptions:\ngenPass = generate 64 char password'
         optionString += '\nvaultInit = create new vault\ngetVault = read vault values'
         optionString += '\nupdateVault = add vault value\nquit = close session\n\nInput command: '
