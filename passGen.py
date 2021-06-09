@@ -24,13 +24,6 @@ def runMethod(iterObj,userInput,mainMethods,vaultObj,keyObj,configObj):
             return 1
     return 0
 
-def getArgs():
-    '''Get script args'''
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-k','--key')
-    parser.add_argument('-c','--config')
-    return parser.parse_args()
-
 def exit(*argv):
     quit()
 
@@ -95,23 +88,29 @@ def createVaultTable(*argv):
         vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
         print('\nvault created at {}/.vault\n'.format(SCRIPT_PATH))
 
-#TO-DO: add special chars + random capitilization
 def hashInputPlusSalt(userInput,saltVal):
     '''Get sha256 of password seed + salt'''
-    return hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
+    specialChars = ['!','@','#','$','%','^','&','*','(',')','+','=','-','~','_',' ']
+    tmp = hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
+    tmp2 = ""
+    for char in tmp:
+        if random.random() < 0.1:
+            tmp2 += "".join(random.choice([random.choice(specialChars),char]))
+        else:
+            tmp2 += "".join(random.choice([char.upper(),char]))
+    return tmp2
 
-#TO-DO: make literalHashTable size configurable + improve hash selection procedure
 def generateNewPW(*argv):
     '''Prompt for password seed and generate random sha256'''
     tmp = gp('\nEnter password seed: ')
-    index = int(round(random.randrange(0,999)))
+    index = int(round(random.randrange(0,argv[2].getHashListSize() - 1)))
     i = 0
-    literalHashTable = []
-    while i < 1000:
+    hashList = []
+    while i < argv[2].getHashListSize():
         saltObj = salt()
-        literalHashTable.append(hashInputPlusSalt(tmp,saltObj.getSalt()))
+        hashList.append(hashInputPlusSalt(tmp,saltObj.getSalt()))
         i += 1
-    print('\nNew password: {}'.format(literalHashTable[index]))
+    print('\nNew password: {}'.format(hashList[index]))
 
 def setCallableMainMethods():
     '''Set user-callable methods dict'''
@@ -123,21 +122,34 @@ def setCallableMainMethods():
     tmp['quit'] = exit
     return tmp
 
+def getOptionDescs(configObj):
+    mainMethods = configObj.getMethodsKeyIter('desc')
+    optionString = '\n==passGen==\n\nOptions:'
+    for elem in mainMethods:
+        optionString += '\n{0} = {1}'.format(elem[0],elem[1])
+    optionString += '\nInput command: '
+    return optionString
+
+def getArgs():
+    '''Get script args'''
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-k','--key')
+    parser.add_argument('-c','--config')
+    return parser.parse_args()
+
 def main():
     '''Run method based on user-input if option keypair found in config.xml'''
-    callableMethods = {}
-    callableMethods = setCallableMainMethods()
     args = getArgs()
-    config0 = config(args.config, SCRIPT_PATH + DEFAULT_CONFIG_PATH)
-    vaultKey = VK(args.key, SCRIPT_PATH + DEFAULT_HIDE_PATH)     
-    vault = VT(config0, SCRIPT_PATH + DEFAULT_VAULT_PATH)
-    #TO-DO: import optionString from config.xml
-    optionString = '\n==passGen==\n\nOptions:\ngenPass = generate 64 char password'
-    optionString += '\nvaultInit = create new vault\ngetVault = read vault values'
-    optionString += '\nupdateVault = add vault value\nquit = close session\n\nInput command: ' 
+    configs = []
+    vaultKeys = []
+    vaults = []
+    configs.append(config(args.config, SCRIPT_PATH + DEFAULT_CONFIG_PATH))
+    vaultKeys.append(VK(args.key, SCRIPT_PATH + DEFAULT_HIDE_PATH))
+    vaults.append(VT(configs[0], SCRIPT_PATH + DEFAULT_VAULT_PATH))
+    optionString = getOptionDescs(configs[0])
     while 1:
         cmd = read(optionString)
-        print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(iter(config0.getMethods().items()),cmd,callableMethods,vault,vaultKey,config0) else None
+        print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(configs[0].getMethodsKeyIter('method'),cmd,setCallableMainMethods(),vaults[0],vaultKeys[0],configs[0]) else None
                 
 if __name__ == '__main__':
     main()
