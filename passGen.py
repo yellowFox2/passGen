@@ -145,7 +145,7 @@ def main():
     callableMethods = {}
     callableMethods = setCallableMainMethods()
     args = getArgs()
-    if args.config and os.path.exists(args.key):
+    if args.config and os.path.exists(args.config):
         config0 = config(args.config)
     else:
         config0 = config(SCRIPT_PATH + '/config/config.xml')
