@@ -5,11 +5,15 @@ from getpass import getpass as gp
 from src.salt import salt
 from src.vaultTable import vaultTable as VT
 from src.vaultKey import vaultKey as VK
+from src.config import config
 
-SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
+SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__)).replace('\\','/')
+DEFAULT_HIDE_PATH = '/.hide/vault.key'
+DEFAULT_VAULT_PATH = '/.vault/vault.json'
+DEFAULT_CONFIG_PATH = '/config/config.xml'
 
 #TO-DO: remove need for try block
-def runMethod(iterObj,userInput,mainMethods,vaultObj,keyObj):
+def runMethod(iterObj,userInput,mainMethods,vaultObj,keyObj,configObj):
     '''Run method if found in callableMethod dict'''
     for options in iterObj:     
         if userInput.lower() == options[0].lower():
@@ -17,16 +21,19 @@ def runMethod(iterObj,userInput,mainMethods,vaultObj,keyObj):
                 try:
                     mainMethods[options[1]]()
                 except TypeError:
-                    mainMethods[options[1]](vaultObj,keyObj)
+                    try:
+                        mainMethods[options[1]](vaultObj,keyObj)
+                    except TypeError:
+                        mainMethods[options[1]](vaultObj,keyObj,configObj)
             else:
                 print('\nERROR: Method "{}" not found. Please update config.xml\n'.format(options[1]))
             return 1
     return 0
 
-#TO-DO: return dictionary instead of list + optimize (?)   
-def getConfigOptions(xmlPath):
+#TO-DO: make method of config instance (?) + return dictionary instead of list + optimize (?)   
+def getConfigOptions(configObj):
     '''Retrieve user option elements from XML as dict'''
-    xml = ET.parse(xmlPath)
+    xml = ET.parse(configObj.getFilePath())
     root = xml.getroot()
     options = root.findall("./options/option")
     optionsList = []
@@ -46,8 +53,8 @@ def getArgs():
 
 def updateVaultTable(vaultObj,keyObj):
     '''Add/update vault keypair based on given user input'''
-    tmp = json.loads(keyObj.decryptByteString(vaultObj.readFile()))
-    if tmp:
+    if vaultObj.checkFile():
+        tmp = json.loads(keyObj.decryptByteString(vaultObj.readFile()))
         siteAlias = read('site alias? (i.e. "reddit")\n')
         pw = read('enter pw:\n')
         tmp['passwords'][siteAlias] = pw
@@ -60,14 +67,17 @@ def updateVaultTable(vaultObj,keyObj):
 
 def printVaultTable(vaultObj,keyObj):
     '''Print JSON of Vault Table'''
-    tmp = keyObj.decryptByteString(vaultObj.readFile())
-    if tmp:
-        if sys.version_info[0] == 2:
-            print(json.loads(tmp))
+    if vaultObj.checkFile():
+        tmp = keyObj.decryptByteString(vaultObj.readFile())
+        if tmp:
+            if sys.version_info[0] == 2:
+                print(json.loads(tmp))
+            else:
+                print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
         else:
-            print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
+            print('\nERROR: couldnt find key at {}'.format(keyObj.getFilePath()))
     else:
-        print('\nERROR: couldnt find key at {}'.format(keyObj.getFilePath()))
+        print('\nERROR: Table not found at {}\n'.format(vaultObj.getFilePath()))
 
 def read(prompt):
     '''Call raw_input() or input() depending on running python version'''
@@ -76,33 +86,31 @@ def read(prompt):
     return input(prompt)
 
 #TO-DO: Cleanup + remove redundancy
-def createVaultTable(vaultObj,keyObj):
-        '''Create vault with default values at default location'''
-        createVaultBool = True      
-        if os.path.exists(SCRIPT_PATH + '/.vault/vault.json'):
-            print('!!!! WARNING: a vault already exists at {}/.vault/vault.json'.format(SCRIPT_PATH))
-            inputMsg = 'Continue? This will overwrite vault existing at ' 
-            inputMsg += SCRIPT_PATH 
-            inputMsg += '/.vault/vault.json [y/n]: '
-            option = read(inputMsg)
-            if option.lower() == 'y':
-                os.remove(SCRIPT_PATH + '/.hide/vault.key') if os.path.exists(SCRIPT_PATH + '/.hide/vault.key') else None         
-                os.remove(SCRIPT_PATH + '/.vault/vault.json') if os.path.exists(SCRIPT_PATH + '/.vault/vault.json') else None            
-            elif option.lower() == 'n':
-                createVaultBool = False
-                print('Aborting vault creation....\n')
-            else:
-                createVaultBool = False
-                print('No option selected')      
-        if createVaultBool is True:
-            os.mkdir(SCRIPT_PATH + '/.vault') if not os.path.exists(SCRIPT_PATH + '/.vault') else None
-            os.mkdir(SCRIPT_PATH + '/.hide') if not os.path.exists(SCRIPT_PATH + '/.hide') else None
-            vaultObj = VT(None,SCRIPT_PATH)
-            keyObj = VK(SCRIPT_PATH + '/.hide/vault.key')
-            keyObj.generateVaultKey()
-            tmp = { "passwords" : { "tmp" : "none" } }
-            vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
-            print('\nvault created at {}/.vault\n'.format(SCRIPT_PATH))
+def createVaultTable(vaultObj,keyObj,configObj):
+    '''Create vault with default values at default location'''
+    mkVaultBool = True
+    if vaultObj.checkFile():
+        inputMsg = '\t!!!! WARNING: This will overwrite vault at {0}{1} \nContinue? [y/n]: '.format(SCRIPT_PATH,DEFAULT_VAULT_PATH)
+        userInput = read(inputMsg)
+        if userInput.lower() == 'y':
+            mkVaultBool = True
+            keyObj.rmFile()
+            vaultObj.rmFile()
+        elif userInput.lower() == 'n':
+            mkVaultbool = False
+            print('\nVault not created\n')
+        else:
+            mkVaultbool = False
+            print('No option selected')
+    if mkVaultBool:
+        vaultObj.mkDir() if not vaultObj.checkParentDir() else None
+        keyObj.mkDir() if not keyObj.checkParentDir() else None
+        vaultObj = VT(configObj)
+        keyObj = VK(SCRIPT_PATH + DEFAULT_HIDE_PATH)
+        keyObj.generateVaultKey()
+        tmp = { "passwords" : { "tmp" : "none" } }
+        vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
+        print('\nvault created at {}/.vault\n'.format(SCRIPT_PATH))
 
 #TO-DO: add special chars + random capitilization
 def hashInputPlusSalt(userInput,saltVal):
@@ -137,24 +145,25 @@ def main():
     callableMethods = {}
     callableMethods = setCallableMainMethods()
     args = getArgs()
+    if args.config and os.path.exists(args.key):
+        config0 = config(args.config)
+    else:
+        config0 = config(SCRIPT_PATH + '/config/config.xml')
     if args.key and os.path.exists(args.key):
         vaultKey = VK(args.key)
     else:
-        vaultKey = VK(SCRIPT_PATH + '/.hide/vault.key')
-    vault = VT(args,SCRIPT_PATH) 
+        vaultKey = VK(SCRIPT_PATH + DEFAULT_HIDE_PATH)
+    vault = VT(config0)
+    #TO-DO: import optionString from config.xml
+    optionString = '\n==passGen==\n\nOptions:\ngenPass = generate 64 char password'
+    optionString += '\nvaultInit = create new vault\ngetVault = read vault values'
+    optionString += '\nupdateVault = add vault value\nquit = close session\n\nInput command: ' 
     while 1:
-        #TO-DO: import optionString from config.xml
-        optionString = '\n==passGen==\n\nOptions:\ngenPass = generate 64 char password'
-        optionString += '\nvaultInit = create new vault\ngetVault = read vault values'
-        optionString += '\nupdateVault = add vault value\nquit = close session\n\nInput command: '
         cmd = read(optionString)
         options = {}
-        if args.config:
-            options = getConfigOptions(args.config).items()
-        else:
-            options = getConfigOptions((vault.getRelScriptPath() + '/config/config.xml')).items()
+        options = getConfigOptions(config0).items()
         optionsIter = iter(options)
-        print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(optionsIter,cmd,callableMethods,vault,vaultKey) else None
+        print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(optionsIter,cmd,callableMethods,vault,vaultKey,config0) else None
                 
 if __name__ == '__main__':
     main()
