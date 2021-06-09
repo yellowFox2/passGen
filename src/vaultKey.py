@@ -22,5 +22,5 @@ class vaultKey(file):
         key = Fernet.generate_key()
         self.writeFile(key)
 
-    def __init__(self,keyPath):
-        super().__init__(keyPath)
+    def __init__(self,keyPath,defaultPath):
+        super().__init__(keyPath,defaultPath)

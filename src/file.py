@@ -17,9 +17,11 @@ class file:
             os.remove(self.getFilePath())
 
     def checkFile(self):
-        if os.path.exists(self.getFilePath()):
-            return 1
-        return 0
+        path = self.getFilePath()
+        if path:
+            if os.path.exists(self.getFilePath()):
+                return True
+        return False
 
     def readFile(self):
         '''Read file (bytes)'''
@@ -32,12 +34,15 @@ class file:
         with open(self.getFilePath(),'wb') as f:
             f.write(content)
     
-    def setFilePath(self,filePath):
+    def setFilePath(self,filePath,defaultPath):
         self.filePath = filePath
+        tmp = self.checkFile()
+        if not tmp:
+            self.filePath = defaultPath
         
     def getFilePath(self):
         return self.filePath    
             
-    def __init__(self,path):
-        self.setFilePath(path)
+    def __init__(self,path,defaultPath):
+        self.setFilePath(path,defaultPath)
         
