@@ -9,9 +9,9 @@ class vaultTable(file):
         config = self.getConfig()
         tmp = config.getVaultPath()
         if tmp and os.path.exists(tmp):
-            super().__init__(tmp,defaultPath)
+            super(vaultTable,self).__init__(tmp,defaultPath)
             return
-        super().__init__(None,defaultPath)
+        super(vaultTable,self).__init__(None,defaultPath)
 
     def setConfig(self,configObj):
         self.config = configObj

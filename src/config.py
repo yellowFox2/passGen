@@ -24,4 +24,4 @@ class config(file):
         return iter(tmp.items())
     
     def __init__(self,path,defaultPath):
-        super().__init__(path,defaultPath)
+        super(config,self).__init__(path,defaultPath)

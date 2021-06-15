@@ -23,4 +23,4 @@ class vaultKey(file):
         self.writeFile(key)
 
     def __init__(self,keyPath,defaultPath):
-        super().__init__(keyPath,defaultPath)
+        super(vaultKey,self).__init__(keyPath,defaultPath)

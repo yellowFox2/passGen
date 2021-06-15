@@ -1,7 +1,7 @@
 import os
 
 #TO-DO: More error-handling
-class file:
+class file(object):
 
     def mkDir(self):
         os.mkdir(os.path.dirname(self.getFilePath))
