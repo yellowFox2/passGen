@@ -4,7 +4,7 @@ import os
 class file(object):
 
     def mkDir(self):
-        os.mkdir(os.path.dirname(self.getFilePath))
+        os.mkdir(os.path.dirname(self.getFilePath()))
 
     def checkParentDir(self):
         return 1 if os.path.exists(self.getParentDir()) else 0
