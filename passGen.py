@@ -1,7 +1,6 @@
-#WISHLIST: iOS/Android interface -- need to refactor for ReactJS (?), optionally host encrypted vault on IPFS -- decrypt on client-side
-import hashlib, random, sys, argparse, os, json
+#WISHLIST: iOS/Android interface, optionally host encrypted vault on IPFS -- decrypt vault on client-side
+import hashlib, random, sys, argparse, os, json, time, platform, gc
 import xml.etree.ElementTree as ET
-from getpass import getpass as gp
 from src.salt import salt
 from src.vaultTable import vaultTable as VT
 from src.vaultKey import vaultKey as VK
@@ -12,19 +11,19 @@ DEFAULT_HIDE_PATH = '/.hide/vault.key'
 DEFAULT_VAULT_PATH = '/.vault/vault.json'
 DEFAULT_CONFIG_PATH = '/config/config.xml'
 
-#TO-DO: remove need for try block
-def runMethod(iterObj,userInput,mainMethods,vaultObj,keyObj,configObj):
+def runMethod(*argv):
     '''Run method if found in callableMethod dict'''
-    for options in iterObj:     
-        if userInput.lower() == options[0].lower():
-            if options[1] in mainMethods:
-                mainMethods[options[1]](vaultObj,keyObj,configObj)
+    for options in argv[0]:     
+        if argv[1].lower() == options[0].lower():
+            if options[1] in argv[2]:
+                argv[2][options[1]](argv[3],argv[4],argv[5])
             else:
                 print('\nERROR: Method "{}" not found. Please update config.xml\n'.format(options[1]))
             return 1
     return 0
 
 def exit(*argv):
+    garb = gc.collect()
     quit()
 
 def updateVaultTable(*argv):
@@ -61,7 +60,7 @@ def read(prompt):
         return raw_input(prompt)
     return input(prompt)
 
-#TO-DO: Cleanup + remove redundancy
+#TO-DO: Cleanup
 def createVaultTable(*argv):
     '''Create vault with default values at default location'''
     mkVaultBool = True
@@ -84,17 +83,17 @@ def createVaultTable(*argv):
         vaultObj = VT(argv[2],SCRIPT_PATH + DEFAULT_VAULT_PATH)
         keyObj = VK(None,SCRIPT_PATH + DEFAULT_HIDE_PATH)
         keyObj.generateVaultKey()
-        tmp = { "passwords" : { "tmp" : "none" } }
+        tmp = { "passwords" : { } }
         vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
         print('\nvault created at {}/.vault\n'.format(SCRIPT_PATH))
 
-def hashInputPlusSalt(userInput,saltVal):
+def hashInputPlusSalt(*argv):
     '''Get sha256 of password seed + salt'''
     specialChars = ['!','@','#','$','%','^','&','*','(',')','+','=','-','~','_',' ']
-    tmp = hashlib.sha256((userInput + str(saltVal)).encode()).hexdigest()
+    tmp = hashlib.sha256((argv[0] + str(argv[1])).encode()).hexdigest()
     tmp2 = ""
     for char in tmp:
-        if random.random() < 0.1:
+        if random.random() < argv[2]:
             tmp2 += "".join(random.choice([random.choice(specialChars),char]))
         else:
             tmp2 += "".join(random.choice([char.upper(),char]))
@@ -102,15 +101,15 @@ def hashInputPlusSalt(userInput,saltVal):
 
 def generateNewPW(*argv):
     '''Prompt for password seed and generate random sha256'''
-    tmp = gp('\nEnter password seed: ')
     index = int(round(random.randrange(0,argv[2].getHashListSize() - 1)))
     i = 0
     hashList = []
+    startTime = time.perf_counter()
     while i < argv[2].getHashListSize():
         saltObj = salt()
-        hashList.append(hashInputPlusSalt(tmp,saltObj.getSalt()))
+        hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),argv[2].getSpecCharChance()))
         i += 1
-    print('\nNew password: {}'.format(hashList[index]))
+    print('\n{0}: {1} hashes in {2} seconds....\n\nNew password: {3}'.format(platform.processor(),i,time.perf_counter() - startTime,hashList[index]))
 
 def setCallableMainMethods():
     '''Set user-callable methods dict'''
@@ -146,8 +145,8 @@ def main():
     configs.append(config(args.config, SCRIPT_PATH + DEFAULT_CONFIG_PATH))
     vaultKeys.append(VK(args.key, SCRIPT_PATH + DEFAULT_HIDE_PATH))
     vaults.append(VT(configs[0], SCRIPT_PATH + DEFAULT_VAULT_PATH))
-    optionString = getOptionDescs(configs[0])
     while 1:
+        optionString = getOptionDescs(configs[0])        
         cmd = read(optionString)
         print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(configs[0].getMethodsKeyIter('method'),cmd,setCallableMainMethods(),vaults[0],vaultKeys[0],configs[0]) else None
                 

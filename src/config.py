@@ -1,6 +1,7 @@
 from .file import file
 import xml.etree.ElementTree as ET
 
+#TO-DO: error-handling, remove redundancy
 class config(file):
 
     def getRootObj(self):
@@ -11,6 +12,9 @@ class config(file):
         
     def getHashListSize(self):
         return int(self.getRootObj()[1].text)
+    
+    def getSpecCharChance(self):
+        return float(self.getRootObj()[2].text)
 
     def getMethodsKeyIter(self,value):
         '''Retrieve user option elements from XML as dict'''
