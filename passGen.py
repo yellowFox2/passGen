@@ -52,7 +52,6 @@ def printVaultTableIPFS(*argv):
         if len(IPFSaddress) == 46:
             print('\nreading from IPFS....\n')
             client = IPFS.connect()
-            print(client.cat(IPFSaddress))
             tmp = argv[1].decryptByteString(client.cat(IPFSaddress))
             client.close()
             if tmp:
@@ -82,6 +81,9 @@ def uploadToIPFS(*argv):
     if uploadOption.lower() == 'y':
         if argv[0].checkFile():
             client = IPFS.connect()
+            IPFSaddress = argv[2].getIPFSaddress()
+            if len(IPFSaddress) == 46 and client.pin.ls(IPFSaddress):
+                client.pin.rm(IPFSaddress)
             res = client.add(SCRIPT_PATH + DEFAULT_VAULT_PATH)
             argv[2].updateIPFSaddress(res['Hash'])
             print('\nNew CID: {}\n'.format(res['Hash']))
