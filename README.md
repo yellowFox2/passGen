@@ -22,11 +22,8 @@ IPFS is a P2P file-hosting protocol that can give users access to files from a g
 <br/>**Once you add vault.key to IPFS, please pin it to your node**
 1. Download/install IPFS from https://dist.ipfs.io/#go-ipfs
 2. Initialize IPFS node (Run 'ipfs init')
-3. Add vault.JSON to IPFS ('ipfs add vault.JSON') **(Save cid produced from this call)**
-4. Pin vault ('ipfs pin vault.JSON')
-5. Start IPFS daemon ('ipfs daemon --enable-gc')
-6. Run 'pip install ipfshttpclient'
-7. Save CID in \<ipfsAddress\> element of .\config\config.xml
+3. Start IPFS daemon ('ipfs daemon --enable-gc')
+4. Run 'pip install ipfshttpclient'
 ### IPFS Options
 * Type "ipfsUpload" to upload encrypted vault to IPFS
 * Type "ipfsGetVault" to get vault stored on IPFS

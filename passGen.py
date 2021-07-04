@@ -54,7 +54,6 @@ def printVaultTableIPFS(*argv):
             client = IPFS.connect()
             print(client.cat(IPFSaddress))
             tmp = argv[1].decryptByteString(client.cat(IPFSaddress))
-            #tmp = argv[1].decryptByteString(bytes(str(client.cat(IPFSaddress))[-1785:],'utf-8'))
             client.close()
             if tmp:
                 if sys.version_info[0] == 2:
@@ -63,7 +62,6 @@ def printVaultTableIPFS(*argv):
                     print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
     else:
         print('\nERROR: No IPFS address found in {}'.format(argv[2].getFilePath))
-
 
 def printVaultTable(*argv):
     '''Print JSON of Vault Table'''
@@ -85,9 +83,9 @@ def uploadToIPFS(*argv):
         if argv[0].checkFile():
             client = IPFS.connect()
             res = client.add(SCRIPT_PATH + DEFAULT_VAULT_PATH)
-            print(res['Hash'])
             argv[2].updateIPFSaddress(res['Hash'])
-            print('new hash: {}'.format(res['Hash']))
+            print('\nNew CID: {}\n'.format(res['Hash']))
+            client.pin.add(res['Hash'])
             client.close()
 
 def read(prompt):
