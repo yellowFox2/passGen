@@ -1,13 +1,23 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <cnfg>
-	<vaultPath></vaultPath>
-	<hashListSize>1000</hashListSize>
+	<vaultPath />
+	<hashListSize>1500</hashListSize>
 	<specCharChance>0.17</specCharChance>
-	<options>
-		<option name="genPass" method="generateNewPW" desc="generate 64 char password"/>
-		<option name="vaultInit" method="createVaultTable" desc="create new vault"/>
-		<option name="getVault" method="printVaultTable" desc="read vault values"/>
-		<option name="updateVault" method="updateVaultTable" desc="add vault value"/>
-		<option name="quit" method="quit" desc="close session"/>	
-	</options>
+	<ipfsAddress />
+	<aliases>
+		<alias name="genPass" method="generateNewPW" desc="generate 64 char password" />
+		<alias name="vaultInit" method="createVaultTable" desc="create new vault" />
+		<alias name="ipfsUpload" method="uploadToIPFS" desc="copy encrypted vault to IPFS" />
+		<alias name="ipfsGetVault" method="printVaultTableIPFS" desc="read vault stored on IPFS (ref in config.xml)" />	
+		<alias name="getVault" method="printVaultTable" desc="read vault values" />
+		<alias name="updateVault" method="updateVaultTable" desc="add vault value" />
+		<alias name="quit" method="quit" desc="close session" />
+		<alias name="gp" method="generateNewPW" desc="generate 64 char password" />
+		<alias name="vi" method="createVaultTable" desc="create new vault" />
+		<alias name="iu" method="uploadToIPFS" desc="copy encrypted vault to IPFS" />
+		<alias name="igv" method="printVaultTableIPFS" desc="read vault stored on IPFS (ref in config.xml)" />		
+		<alias name="gv" method="printVaultTable" desc="read vault values" />
+		<alias name="uv" method="updateVaultTable" desc="add vault value" />
+		<alias name="q" method="quit" desc="close session" />
+	</aliases>
 </cnfg>

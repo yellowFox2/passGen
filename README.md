@@ -11,9 +11,23 @@ CLI password generator/vault. Easily generate and store passwords in (Fernet) en
 5. [Recommended] rename and move .\\.vault\vault.json file to a secure location
 6. [Recommended] update vaultPath element in .\config\config.xml to reflect new name and file location
 7. [Recommended] rename and move vault.key (stored in .\\.hide\\) to secure location
-** It is highly recommended to move vault.key file. After moving file, you can reference it at runtime using "--key=<path\to\key\keyname.key>"
+<br/>**It is highly recommended to move vault.key file. After moving file, you can reference it at runtime using "--key=<path\to\key\keyname.key>"**
 # Options
 * To generate a new password, type "genPass" and type password seed
 * To update vault, type "updateVault" and input site alias and password -- copy and paste from password created with "genPass"
-* To switch between vaults and different vault keys, keep multiple copies of .\config\config.xml (each referencing different vault locations), then run the script with following args: --key=<path\to\key\keyname.key> --config=<path\to\config\config.xml>
-* To use different commands to run vault table queries, add/update \<options\> element attributes in config.xml -- name attribute = command name, function attribute = function call
+* To switch between different vaults and keys, keep multiple copies of .\config\config.xml (each referencing different vault locations), then run the script with following args: --key=<path\to\key\keyname.key> --config=<path\to\config\config.xml>
+* To use different command aliases to run vault table queries, add/update \<aliases\> element attributes in config.xml *(name attribute = command name, method attribute = name of method to call, desc = alias description)*
+## Using IPFS (Optional)
+IPFS is a P2P file-hosting protocol that can give users access to files from a given cid (hash). <ins>Users are given the option to host their encrypted vault on IPFS and decrypting it client-side</ins> by referencing their vault's cid in .\config\config.xml (update the \<ipfsAddress\> element).
+<br/>**Once you add vault.key to IPFS, please pin it to your node**
+1. Download/install IPFS from https://dist.ipfs.io/#go-ipfs
+2. Initialize IPFS node (Run 'ipfs init')
+3. Add vault.JSON to IPFS ('ipfs add vault.JSON') **(Save cid produced from this call)**
+4. Pin vault ('ipfs pin vault.JSON')
+5. Start IPFS daemon ('ipfs daemon --enable-gc')
+6. Run 'pip install ipfshttpclient'
+7. Save CID in \<ipfsAddress\> element of .\config\config.xml
+### IPFS Options
+* Type "ipfsUpload" to upload encrypted vault to IPFS
+* Type "ipfsGetVault" to get vault stored on IPFS
+

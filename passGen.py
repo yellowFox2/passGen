@@ -1,10 +1,13 @@
-#WISHLIST: iOS/Android interface, optionally host encrypted vault on IPFS -- decrypt vault on client-side
 import hashlib, random, sys, argparse, os, json, time, platform, gc
 import xml.etree.ElementTree as ET
 from src.salt import salt
 from src.vaultTable import vaultTable as VT
 from src.vaultKey import vaultKey as VK
 from src.config import config
+try:
+    import ipfshttpclient as IPFS
+except ImportError:
+    IPFS = None
 
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__)).replace('\\','/')
 DEFAULT_HIDE_PATH = '/.hide/vault.key'
@@ -35,24 +38,57 @@ def updateVaultTable(*argv):
         tmp['passwords'][siteAlias] = pw
         try:
             argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
+            uploadToIPFS(*argv)
         except (IOError, ValueError) as e:
             print(e)
     else:
         print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))
 
+def printVaultTableIPFS(*argv):
+    '''Print JSON of Vault Table on IPFS (from referenced address in config.xml)'''
+    tmp = None
+    IPFSaddress = argv[2].getIPFSaddress()
+    if IPFS and IPFSaddress:
+        if len(IPFSaddress) == 46:
+            print('\nreading from IPFS....\n')
+            client = IPFS.connect()
+            print(client.cat(IPFSaddress))
+            tmp = argv[1].decryptByteString(client.cat(IPFSaddress))
+            #tmp = argv[1].decryptByteString(bytes(str(client.cat(IPFSaddress))[-1785:],'utf-8'))
+            client.close()
+            if tmp:
+                if sys.version_info[0] == 2:
+                    print(json.loads(tmp))
+                else:
+                    print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
+    else:
+        print('\nERROR: No IPFS address found in {}'.format(argv[2].getFilePath))
+
+
 def printVaultTable(*argv):
     '''Print JSON of Vault Table'''
+    tmp = None
     if argv[0].checkFile():
-        tmp = argv[1].decryptByteString(argv[0].readFile())
-        if tmp:
-            if sys.version_info[0] == 2:
-                print(json.loads(tmp))
-            else:
-                print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
+        tmp = argv[1].decryptByteString(argv[0].readFile())   
+    if tmp:
+        if sys.version_info[0] == 2:
+            print(json.loads(tmp))
         else:
-            print('\nERROR: couldnt find key at {}'.format(argv[1].getFilePath()))
+            print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
     else:
         print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))
+
+def uploadToIPFS(*argv):
+    '''Upload encrypted JSON to IPFS if running IPFS node'''
+    uploadOption = read('Upload to IPFS? [y/n]: ')
+    if uploadOption.lower() == 'y':
+        if argv[0].checkFile():
+            client = IPFS.connect()
+            res = client.add(SCRIPT_PATH + DEFAULT_VAULT_PATH)
+            print(res['Hash'])
+            argv[2].updateIPFSaddress(res['Hash'])
+            print('new hash: {}'.format(res['Hash']))
+            client.close()
 
 def read(prompt):
     '''Call raw_input() or input() depending on running python version'''
@@ -86,6 +122,7 @@ def createVaultTable(*argv):
         tmp = { "passwords" : { } }
         vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
         print('\nvault created at {}/.vault\n'.format(SCRIPT_PATH))
+        uploadToIPFS(*argv)
 
 def hashInputPlusSalt(*argv):
     '''Get sha256 of password seed + salt'''
@@ -118,6 +155,8 @@ def setCallableMainMethods():
     tmp['createVaultTable'] = createVaultTable
     tmp['printVaultTable'] = printVaultTable
     tmp['updateVaultTable'] = updateVaultTable
+    tmp['uploadToIPFS'] = uploadToIPFS
+    tmp['printVaultTableIPFS'] = printVaultTableIPFS
     tmp['quit'] = exit
     return tmp
 

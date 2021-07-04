@@ -1,6 +1,6 @@
 import hashlib, random
 
-class salt(object):
+class salt:
 
 	def setIntSize(self):
 		while 1:

@@ -13,6 +13,12 @@ class vaultTable(file):
             return
         super(vaultTable,self).__init__(None,defaultPath)
 
+    def setEncryptedVaultTable(self,content):
+        self.encryptedVaultTable = bytes(content)
+
+    def getEncryptedVaultTable(self):
+        return self.encryptedVaultTable
+
     def setConfig(self,configObj):
         self.config = configObj
 
