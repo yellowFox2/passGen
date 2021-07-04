@@ -19,7 +19,6 @@ CLI password generator/vault. Easily generate and store passwords in (Fernet) en
 * To use different command aliases to run vault table queries, add/update \<aliases\> element attributes in config.xml *(name attribute = command name, method attribute = name of method to call, desc = alias description)*
 ## Using IPFS (Optional)
 IPFS is a P2P file-hosting protocol that can give users access to files from a given cid (hash). <ins>Users are given the option to host their encrypted vault on IPFS and decrypting it client-side</ins> by referencing their vault's cid in .\config\config.xml (update the \<ipfsAddress\> element).
-<br/>**Once you add vault.key to IPFS, please pin it to your node**
 1. Download/install IPFS from https://dist.ipfs.io/#go-ipfs
 2. Initialize IPFS node (Run 'ipfs init')
 3. Start IPFS daemon ('ipfs daemon --enable-gc')
