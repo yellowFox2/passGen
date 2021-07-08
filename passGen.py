@@ -16,10 +16,10 @@ DEFAULT_CONFIG_PATH = '/config/config.xml'
 
 def runMethod(*argv):
     '''Run method if found in callableMethod dict'''
-    for options in argv[0]:     
-        if argv[1].lower() == options[0].lower():
-            if options[1] in argv[2]:
-                argv[2][options[1]](argv[3],argv[4],argv[5])
+    for options in argv[4].getMethodsKeyIter('method'):     
+        if argv[0].lower() == options[0].lower():
+            if options[1] in argv[1]:
+                argv[1][options[1]](argv[2],argv[3],argv[4])
             else:
                 print('\nERROR: Method "{}" not found. Please update config.xml\n'.format(options[1]))
             return 1
@@ -60,7 +60,7 @@ def printVaultTableIPFS(*argv):
                 else:
                     print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
     else:
-        print('\nERROR: No IPFS address found in {}'.format(argv[2].getFilePath))
+        print('\nERROR: No IPFS address found in {}'.format(argv[2].getFilePath()))
 
 def printVaultTable(*argv):
     '''Print JSON of Vault Table'''
@@ -77,18 +77,21 @@ def printVaultTable(*argv):
 
 def uploadToIPFS(*argv):
     '''Upload encrypted JSON to IPFS if running IPFS node'''
-    uploadOption = read('Upload to IPFS? [y/n]: ')
-    if uploadOption.lower() == 'y':
-        if argv[0].checkFile():
-            client = IPFS.connect()
-            IPFSaddress = argv[2].getIPFSaddress()
-            if len(IPFSaddress) == 46 and client.pin.ls(IPFSaddress):
-                client.pin.rm(IPFSaddress)
-            res = client.add(SCRIPT_PATH + DEFAULT_VAULT_PATH)
-            argv[2].updateIPFSaddress(res['Hash'])
-            print('\nNew CID: {}\n'.format(res['Hash']))
-            client.pin.add(res['Hash'])
-            client.close()
+    if IPFS:
+        uploadOption = read('Upload to IPFS? [y/n]: ')
+        if uploadOption.lower() == 'y':
+            if argv[0].checkFile():
+                client = IPFS.connect()
+                IPFSaddress = argv[2].getIPFSaddress()
+                if len(IPFSaddress) == 46 and client.pin.ls(IPFSaddress):
+                    client.pin.rm(IPFSaddress)
+                res = client.add(SCRIPT_PATH + DEFAULT_VAULT_PATH)
+                argv[2].updateIPFSaddress(res['Hash'])
+                print('\nNew CID: {}\n'.format(res['Hash']))
+                client.pin.add(res['Hash'])
+                client.close()
+    else:
+        print('\nERROR: ipfshttpclient module not installed....\n')
 
 def read(prompt):
     '''Call raw_input() or input() depending on running python version'''
@@ -148,7 +151,7 @@ def generateNewPW(*argv):
         i += 1
     print('\n{0}: {1} hashes in {2} seconds....\n\nNew password: {3}'.format(platform.processor(),i,time.perf_counter() - startTime,hashList[index]))
 
-def setCallableMainMethods():
+def setCallableMethods():
     '''Set user-callable methods dict'''
     tmp = {}
     tmp['generateNewPW'] = generateNewPW
@@ -187,7 +190,7 @@ def main():
     while 1:
         optionString = getOptionDescs(configs[0])        
         cmd = read(optionString)
-        print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(configs[0].getMethodsKeyIter('method'),cmd,setCallableMainMethods(),vaults[0],vaultKeys[0],configs[0]) else None
+        print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(cmd,setCallableMethods(),vaults[0],vaultKeys[0],configs[0]) else None
                 
 if __name__ == '__main__':
     main()
