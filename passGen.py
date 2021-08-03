@@ -29,20 +29,40 @@ def exit(*argv):
     garb = gc.collect()
     quit()
 
+def getDecryptedVaultTable(*argv):
+    '''Return decrypted bytestring as json'''
+    if argv[0].checkFile():
+        return json.loads(argv[1].decryptByteString(argv[0].readFile()))
+    return None
+
+def delVaultTableRecord(*argv):
+    '''Delete record from vault table by user input keyname'''
+    tmp = getDecryptedVaultTable(*argv) 
+    if tmp:
+        siteAlias = read('which site alias to delete? (i.e. "reddit")\n')
+        check = read('\nAre you sure? Can not be undone [y/n]?\n')
+        if check[0].lower() == 'y':
+            tmp['passwords'].pop(str(siteAlias))
+            print('\n{} record deleted....\n'.format(siteAlias))
+            argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
+    else:
+        print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))
+
 def updateVaultTable(*argv):
     '''Add/update vault keypair based on given user input'''
-    if argv[0].checkFile():
-        tmp = json.loads(argv[1].decryptByteString(argv[0].readFile()))
+    tmp = getDecryptedVaultTable(*argv)
+    if tmp:
         siteAlias = read('site alias? (i.e. "reddit")\n')
         pw = read('enter pw:\n')
         tmp['passwords'][siteAlias] = pw
         try:
             argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
-            uploadToIPFS(*argv)
+            uploadToIPFS(*argv) if IPFS else None
         except (IOError, ValueError) as e:
             print(e)
     else:
-        print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))
+        print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))        
+
 
 def printVaultTableIPFS(*argv):
     '''Print JSON of Vault Table on IPFS (from referenced address in config.xml)'''
@@ -160,6 +180,7 @@ def setCallableMethods():
     tmp['updateVaultTable'] = updateVaultTable
     tmp['uploadToIPFS'] = uploadToIPFS
     tmp['printVaultTableIPFS'] = printVaultTableIPFS
+    tmp['delVaultTableRecord'] = delVaultTableRecord
     tmp['quit'] = exit
     return tmp
 
