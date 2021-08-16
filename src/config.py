@@ -1,14 +1,13 @@
-qfrom .file import file
+from .file import file
 import xml.etree.ElementTree as ET
 
 #TO-DO: error-handling, remove redundancy
 class config(file):
-        
-    def updateIPFSaddress(self,content):
-        self.getRootObj().find('ipfsAddress').text = content
-        self.getET().write(self.getFilePath(),encoding='UTF-8',xml_declaration=True)
-        self.IPFSaddress = content
 
+    def updateElem(self,elem,content):  
+        self.getRootObj().find(elem).text = str(content)
+        self.getET().write(self.getFilePath(),encoding='UTF-8',xml_declaration=True)
+    
     def cast2(self,obj,type):
         if type == 'str':
             return str(obj)
@@ -25,7 +24,7 @@ class config(file):
         except AttributeError:
             print('\nWARNING: <{0}> elem not set in {1}\n'.format(elemName,self.getFilePath()))
             return None
-            
+
     def getRootObj(self):
         return self.getET().getroot()
 
@@ -40,12 +39,6 @@ class config(file):
             tmp[keyPair['name']] = keyPair[value]      
         return iter(tmp.items())
     
-    def getIPFSaddress(self):
-        return self.IPFSaddress   
-
-    def setIPFSaddress(self):
-        self.IPFSaddress = self.getElem('ipfsAddress',str)
-
     def getET(self):
         return self.ET
 
@@ -55,7 +48,3 @@ class config(file):
     def __init__(self,path,defaultPath):
         super(config,self).__init__(path,defaultPath)
         self.setET()
-        try:
-            self.setIPFSaddress()
-        except AttributeError:
-            print('\nNo IPFS address set....\n')

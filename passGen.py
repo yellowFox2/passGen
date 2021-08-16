@@ -17,9 +17,11 @@ SCRIPT_PATH = [os.path.dirname(os.path.abspath(__file__)).replace('\\','/'), 'st
 DEFAULT_HIDE_PATH = ['/.hide/vault.key', 'str']
 DEFAULT_VAULT_PATH = ['/.vault/vault.json', 'str']
 DEFAULT_CONFIG_PATH = ['/config/config.xml', 'str']
+VAULT_PATH = ['vaultPath','str', SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0]]
 HASH_LIST_LEN = ['hashListSize', 'int', 1500]
 SPEC_CHAR_CHANCE = ['specCharChance', 'float', 0.17]
 CLEAR_FLAG = ['clearOnExit','int', 1]
+IPFS_ADDRESS = ['ipfsAddress', 'str', '']
 METHOD_CALL_KEYS = ['generateNewPW', 'createVaultTable','printVaultTable','updateVaultTable',
 'uploadToIPFS', 'printVaultTableIPFS', 'delVaultTableRecord', 'createShortcut', 'quit']
 
@@ -46,10 +48,10 @@ def exit(*argv):
     quit()
 
 def getDecryptedVaultTable(*argv):
-    '''Return decrypted bytestring as json'''
-    if argv[0].checkFile():
-        return json.loads(argv[1].decryptByteString(argv[0].readFile()))
-    return None
+	'''Return decrypted bytestring as json'''
+	if argv[0].checkFile():
+		return json.loads(argv[1].decryptByteString(argv[0].readFile()))
+	return None
 
 def createShortcut(*argv):
     '''Create bash script running script + arg, then a symbolic link to script'''
@@ -86,7 +88,6 @@ def updateVaultTable(*argv):
         tmp['passwords'][siteAlias] = pw
         try:
             argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')),'wb')
-            uploadToIPFS(*argv) if IPFS else None
         except (IOError, ValueError) as e:
             print(e)
     else:
@@ -95,7 +96,7 @@ def updateVaultTable(*argv):
 def printVaultTableIPFS(*argv):
     '''Print JSON of Vault Table on IPFS (from referenced address in config.xml)'''
     tmp = None
-    IPFSaddress = argv[2].getIPFSaddress()
+    IPFSaddress = argv[2].getElem(IPFS_ADDRESS[0],IPFS_ADDRESS[1])
     if IPFS and IPFSaddress:
         if len(IPFSaddress) == 46:
             print('\nreading from IPFS....\n')
@@ -130,12 +131,12 @@ def uploadToIPFS(*argv):
         if uploadOption.lower() == 'y':
             if argv[0].checkFile():
                 client = IPFS.connect()
-                IPFSaddress = argv[2].getIPFSaddress()
+                IPFSaddress = argv[2].getElem(IPFS_ADDRESS[0],IPFS_ADDRESS[1])
                 if IPFSaddress:
                     if len(IPFSaddress) == 46 and client.pin.ls(IPFSaddress):
                         client.pin.rm(IPFSaddress)
                 res = client.add(SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0])
-                argv[2].updateIPFSaddress(res['Hash'])
+                argv[2].updateElem('ipfsAddress', res['Hash'])
                 print('\nNew CID: {}\n'.format(res['Hash']))
                 client.pin.add(res['Hash'])
                 client.close()
@@ -164,17 +165,19 @@ def overwriteVault(*argv):
 def createVaultTable(*argv):
     '''Create vault with default values at default location'''
     mkVaultBool = 1
-    if argv[0].checkFile():
+    if os.path.exists(VAULT_PATH[2]):
     	mkVaultBool = overwriteVault(*argv)
     if mkVaultBool:
         argv[0].mkDir() if not argv[0].checkParentDir() else None
         argv[1].mkDir() if not argv[1].checkParentDir() else None
-        vaultObj = VT(argv[2],SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0])
+        print(VAULT_PATH[2])
+        vaultObj = VT(None,VAULT_PATH[2])
         keyObj = VK(None,SCRIPT_PATH[0] + DEFAULT_HIDE_PATH[0])
         keyObj.generateVaultKey()
         tmp = { "passwords" : { } }
         vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')),'wb')
-        print('\nVault created at {}/.vault\n'.format(SCRIPT_PATH[0]))
+        argv[2].updateElem(VAULT_PATH[0],vaultObj.getFilePath())
+        print('\nVault created at {}\n'.format(vaultObj.getFilePath()))
 
 def hashInputPlusSalt(*argv):
     '''Get sha256 of password seed + salt'''
@@ -237,18 +240,19 @@ def getArgs():
     parser.add_argument('-m','--method')
     return parser.parse_args()
 
+#TO-DO: clear args.key if new vault created on last iteration
 def main():
-    '''Run method based on user-input if option keypair found in config.xml'''
-    args = getArgs()
-    configs = [config(args.config, SCRIPT_PATH[0] + DEFAULT_CONFIG_PATH[0])]
-    vaultKeys = [VK(args.key, SCRIPT_PATH[0] + DEFAULT_HIDE_PATH[0])]
-    vaults = [VT(configs[0], SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0])]
-    while 1:
-        optionString = setOptionString(configs[0])
-        cmd = args.method if args.method else read(optionString)
-        print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(cmd,setCallableMethods(),vaults[0],vaultKeys[0],configs[0]) else None
-        args.method = None
-                
+	'''Run method based on user-input if option keypair found in config.xml'''
+	args = getArgs()
+	while 1:
+		configs = [config(args.config, SCRIPT_PATH[0] + DEFAULT_CONFIG_PATH[0])]
+		vaultKeys = [VK(args.key, SCRIPT_PATH[0] + DEFAULT_HIDE_PATH[0])]
+		vaults = [VT(configs[0].getElem(VAULT_PATH[0],VAULT_PATH[1]),VAULT_PATH[2])]
+		optionString = setOptionString(configs[0])
+		cmd = args.method if args.method else read(optionString)
+		print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(cmd,setCallableMethods(),vaults[0],vaultKeys[0],configs[0]) else None
+		args.method = None
+ 
 if __name__ == '__main__':
     main()
     

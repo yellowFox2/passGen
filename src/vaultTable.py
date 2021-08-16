@@ -3,15 +3,14 @@ import xml.etree.ElementTree as ET
 from .file import file
 
 class vaultTable(file):
-      
-    def setVaultPath(self,defaultPath):
-        '''Set vault path to object attribute'''
-        config = self.getConfig()
-        tmp = config.getElem('vaultPath','str')
-        if tmp and os.path.exists(tmp):
-            super(vaultTable,self).__init__(tmp,defaultPath)
-            return
-        super(vaultTable,self).__init__(None,defaultPath)
+    
+    def setFilePath(self,configuredPath,defaultPath):
+        tmp = configuredPath
+        if tmp:
+            self.filePath = tmp if os.path.exists(os.path.dirname(tmp)) else defaultPath
+        else:
+            self.filePath = defaultPath
+        print('\nUsing path: {}\n'.format(self.filePath))
 
     def setEncryptedVaultTable(self,content):
         self.encryptedVaultTable = bytes(content)
@@ -19,14 +18,6 @@ class vaultTable(file):
     def getEncryptedVaultTable(self):
         return self.encryptedVaultTable
 
-    def setConfig(self,configObj):
-        self.config = configObj
-
-    def getConfig(self):
-        return self.config
-    
-    #TO-DO: only pass file path -- check for config in main and if given path in config exists
-    def __init__(self,configObj,defaultPath):
-        self.setConfig(configObj)
-        self.setVaultPath(defaultPath)
+    def __init__(self,configuredPath,defaultPath):
+        super(vaultTable,self).__init__(configuredPath,defaultPath)
         
