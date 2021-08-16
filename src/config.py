@@ -1,4 +1,4 @@
-from .file import file
+qfrom .file import file
 import xml.etree.ElementTree as ET
 
 #TO-DO: error-handling, remove redundancy
@@ -23,8 +23,9 @@ class config(file):
             elemVal = self.getRootObj().find(elemName).text.strip()
             return self.cast2(elemVal,type)
         except AttributeError:
-            print('\nWARNING: <{0}> elem not set in {1}.\n'.format(elemName,self.getFilePath()))
+            print('\nWARNING: <{0}> elem not set in {1}\n'.format(elemName,self.getFilePath()))
             return None
+            
     def getRootObj(self):
         return self.getET().getroot()
 

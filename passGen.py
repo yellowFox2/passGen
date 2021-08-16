@@ -5,6 +5,7 @@ from src.vaultTable import vaultTable as VT
 from src.vaultKey import vaultKey as VK
 from src.config import config
 from src.bash import bash
+
 try:
     import ipfshttpclient as IPFS
 except ImportError:
@@ -18,18 +19,19 @@ DEFAULT_VAULT_PATH = ['/.vault/vault.json', 'str']
 DEFAULT_CONFIG_PATH = ['/config/config.xml', 'str']
 HASH_LIST_LEN = ['hashListSize', 'int', 1500]
 SPEC_CHAR_CHANCE = ['specCharChance', 'float', 0.17]
-CLEAR_FLAG = ['clearOnExit','int',1]
+CLEAR_FLAG = ['clearOnExit','int', 1]
+METHOD_CALL_KEYS = ['generateNewPW', 'createVaultTable','printVaultTable','updateVaultTable',
+'uploadToIPFS', 'printVaultTableIPFS', 'delVaultTableRecord', 'createShortcut', 'quit']
 
-#arg[0] = cmd, argv[1] = callableMethod dict, 
-#argv[2] = vaultObj, argv[3] = keyObj, argv[4] = configOb
+#arg[0] = cmd, argv[1] = callableMethod dict, argv[2] = vaultObj, argv[3] = keyObj, argv[4] = configOb
 def runMethod(*argv):
     '''Run method if found in callableMethod dict'''
-    for options in argv[4].getMethodsKeyIter('method'):     
-        if argv[0].lower() == options[0].lower():
-            if options[1] in argv[1]:
-                argv[1][options[1]](argv[2],argv[3],argv[4])
+    for methods in argv[4].getMethodsKeyIter('method'):     
+        if argv[0].lower() == methods[0].lower():
+            if methods[1] in argv[1]:
+                argv[1][methods[1]](argv[2],argv[3],argv[4])
             else:
-                print('\nERROR: Method "{}" not found. Please update config.xml\n'.format(options[1]))
+                print('\nERROR: Method "{}" not found. Please update config.xml or revert to default.xml\n'.format(methods[1]))
             return 1
     return 0
 
@@ -90,7 +92,6 @@ def updateVaultTable(*argv):
     else:
         print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))        
 
-
 def printVaultTableIPFS(*argv):
     '''Print JSON of Vault Table on IPFS (from referenced address in config.xml)'''
     tmp = None
@@ -147,22 +148,24 @@ def read(prompt):
         return raw_input(prompt)
     return input(prompt)
 
-#TO-DO: Cleanup
+def overwriteVault(*argv):
+	'''Validate that user wants to overwrite vault'''
+	inputMsg = '\t!!!! WARNING: This will overwrite vault at {0}{1} \nContinue? [y/n]: '.format(SCRIPT_PATH[0],DEFAULT_VAULT_PATH[0])
+	userInput = read(inputMsg)
+	if userInput.lower() == 'y':
+		argv[1].rmFile()
+		argv[0].rmFile()
+		print('\n{0} and {1} removed....\n'.format(argv[0].getFilePath(),argv[1].getFilePath()))
+		return 1
+	else:
+		print('\nVault not created\n')
+		return 0
+
 def createVaultTable(*argv):
     '''Create vault with default values at default location'''
-    mkVaultBool = True
+    mkVaultBool = 1
     if argv[0].checkFile():
-        inputMsg = '\t!!!! WARNING: This will overwrite vault at {0}{1} \nContinue? [y/n]: '.format(SCRIPT_PATH[0],DEFAULT_VAULT_PATH[0])
-        userInput = read(inputMsg)
-        if userInput.lower() == 'y':
-            argv[1].rmFile()
-            argv[0].rmFile()
-        elif userInput.lower() == 'n':
-            mkVaultBool = False
-            print('\nVault not created\n')
-        else:
-            mkVaultBool = False
-            print('No option selected')
+    	mkVaultBool = overwriteVault(*argv)
     if mkVaultBool:
         argv[0].mkDir() if not argv[0].checkParentDir() else None
         argv[1].mkDir() if not argv[1].checkParentDir() else None
@@ -171,8 +174,7 @@ def createVaultTable(*argv):
         keyObj.generateVaultKey()
         tmp = { "passwords" : { } }
         vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')),'wb')
-        print('\nvault created at {}/.vault\n'.format(SCRIPT_PATH[0]))
-        uploadToIPFS(*argv)
+        print('\nVault created at {}/.vault\n'.format(SCRIPT_PATH[0]))
 
 def hashInputPlusSalt(*argv):
     '''Get sha256 of password seed + salt'''
@@ -188,38 +190,44 @@ def hashInputPlusSalt(*argv):
 
 def generateNewPW(*argv):
     '''Prompt for password seed and generate random sha256'''
-    hashListSize = argv[2].getElem('hashListSize','int') if argv[2].getElem('hashListSize','int') else HASH_LIST_LEN[0]
+    tmp1 = argv[2].getElem(HASH_LIST_LEN[0],HASH_LIST_LEN[1])
+    if tmp1:
+    	hashListSize = tmp1 if tmp1 > 1 else HASH_LIST_LEN[2]
+    else:
+    	hashListSize = HASH_LIST_LEN[2]
     index = int(round(random.randrange(0,hashListSize - 1)))
     i = 0
     hashList = []
     startTime = time.perf_counter()
+    tmp2 = argv[2].getElem(SPEC_CHAR_CHANCE[0],SPEC_CHAR_CHANCE[1])
     while i < hashListSize:
         saltObj = salt()
-        hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),argv[2].getElem(SPEC_CHAR_CHANCE[0],SPEC_CHAR_CHANCE[1])))
+        hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),tmp2)) if tmp2 else hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),SPEC_CHAR_CHANCE[2]))
         i += 1
     print('\n{0}: {1} hashes in {2} seconds....\n\nNew password: {3}'.format(platform.processor(),i,time.perf_counter() - startTime,hashList[index]))
 
 def setCallableMethods():
     '''Set user-callable methods dict'''
     tmp = {}
-    tmp['generateNewPW'] = generateNewPW
-    tmp['createVaultTable'] = createVaultTable
-    tmp['printVaultTable'] = printVaultTable
-    tmp['updateVaultTable'] = updateVaultTable
-    tmp['uploadToIPFS'] = uploadToIPFS
-    tmp['printVaultTableIPFS'] = printVaultTableIPFS
-    tmp['delVaultTableRecord'] = delVaultTableRecord
-    tmp['createShortcut'] = createShortcut
-    tmp['quit'] = exit
+    tmp[METHOD_CALL_KEYS[0]] = generateNewPW
+    tmp[METHOD_CALL_KEYS[1]] = createVaultTable
+    tmp[METHOD_CALL_KEYS[2]] = printVaultTable
+    tmp[METHOD_CALL_KEYS[3]] = updateVaultTable
+    tmp[METHOD_CALL_KEYS[4]] = uploadToIPFS
+    tmp[METHOD_CALL_KEYS[5]] = printVaultTableIPFS
+    tmp[METHOD_CALL_KEYS[6]] = delVaultTableRecord
+    tmp[METHOD_CALL_KEYS[7]] = createShortcut
+    tmp[METHOD_CALL_KEYS[8]] = exit
     return tmp
 
 def setOptionString(configObj):
-    mainMethods = configObj.getMethodsKeyIter('desc')
-    optionString = '\n==passGen==\n\nOptions:'
-    for elem in mainMethods:
-        optionString += '\n{0} = {1}'.format(elem[0],elem[1])
-    optionString += '\nInput command: '
-    return optionString
+	'''Set and return user menu string'''
+	mainMethods = configObj.getMethodsKeyIter('desc')
+	optionString = '\n==passGen==\n\nOptions:'
+	for elem in mainMethods:
+	    optionString += '\n{0} = {1}'.format(elem[0],elem[1])
+	optionString += '\nInput command: '
+	return optionString
 
 def getArgs():
     '''Get script args'''
@@ -232,12 +240,9 @@ def getArgs():
 def main():
     '''Run method based on user-input if option keypair found in config.xml'''
     args = getArgs()
-    configs = []
-    vaultKeys = []
-    vaults = []
-    configs.append(config(args.config, SCRIPT_PATH[0] + DEFAULT_CONFIG_PATH[0]))
-    vaultKeys.append(VK(args.key, SCRIPT_PATH[0] + DEFAULT_HIDE_PATH[0]))
-    vaults.append(VT(configs[0], SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0]))
+    configs = [config(args.config, SCRIPT_PATH[0] + DEFAULT_CONFIG_PATH[0])]
+    vaultKeys = [VK(args.key, SCRIPT_PATH[0] + DEFAULT_HIDE_PATH[0])]
+    vaults = [VT(configs[0], SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0])]
     while 1:
         optionString = setOptionString(configs[0])
         cmd = args.method if args.method else read(optionString)
