@@ -15,8 +15,10 @@ CLI password generator/vault. Easily generate and store passwords in (Fernet) en
 # Options
 * To generate a new password, type "genPass" and type password seed
 * To update vault, type "updateVault" and input site alias and password -- copy and paste from password created with "genPass"
+* To remove vault entry, type "deleteRecord" and input site alias
 * To switch between different vaults and keys, keep multiple copies of .\config\config.xml (each referencing different vault locations), then run the script with following args: --key=<path\to\key\keyname.key> --config=<path\to\config\config.xml>
 * To use different command aliases to run vault table queries, add/update \<aliases\> element attributes in config.xml *(name attribute = command name, method attribute = name of method to call, desc = alias description)*
+* To create a shortcut, type "createShortcut" and input bash script location, argument to run with script, and location of shortcut -- only on Linux (for now)
 ## Using IPFS (Optional)
 IPFS is a P2P file-hosting protocol that can give users access to files from a given cid (hash). <ins>Users are given the option to host their encrypted vault on IPFS and decrypting it client-side</ins> by referencing their vault's cid in .\config\config.xml (update the \<ipfsAddress\> element).
 1. Download/install IPFS from https://dist.ipfs.io/#go-ipfs
