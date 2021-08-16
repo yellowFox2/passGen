@@ -3,38 +3,33 @@ import xml.etree.ElementTree as ET
 
 #TO-DO: error-handling, remove redundancy
 class config(file):
-
-    def setET(self):
-        self.ET = ET.parse(self.getFilePath())
-
-    def getET(self):
-        return self.ET
-
-    def getRootObj(self):
-        return self.getET().getroot()
-
-    def getVaultPath(self):
-        return self.getRootObj().find('vaultPath').text
         
-    def getHashListSize(self):
-        return int(self.getRootObj().find('hashListSize').text)
-    
-    def getSpecCharChance(self):
-        return float(self.getRootObj().find('specCharChance').text)
-
     def updateIPFSaddress(self,content):
         self.getRootObj().find('ipfsAddress').text = content
         self.getET().write(self.getFilePath(),encoding='UTF-8',xml_declaration=True)
         self.IPFSaddress = content
 
-    def setIPFSaddress(self):
-        self.IPFSaddress = str(self.getRootObj().find('ipfsAddress').text).strip()
+    def cast2(self,obj,type):
+        if type == 'str':
+            return str(obj)
+        elif type == 'int':
+            return int(obj)
+        elif type == 'float':
+            return float(obj)
+        return None
 
-    def getIPFSaddress(self):
-        return self.IPFSaddress
+    def getElem(self,elemName,type):
+        try:
+            elemVal = self.getRootObj().find(elemName).text.strip()
+            return self.cast2(elemVal,type)
+        except AttributeError:
+            print('\nWARNING: <{0}> elem not set in {1}.\n'.format(elemName,self.getFilePath()))
+            return None
+    def getRootObj(self):
+        return self.getET().getroot()
 
     def getMethodsKeyIter(self,value):
-        '''Retrieve user option elements from XML as dict'''
+        '''Retrieve method aliases from XML as dict'''
         aliases = self.getRootObj().findall("./aliases/alias")
         aliasList = []
         for alias in aliases:
@@ -44,6 +39,18 @@ class config(file):
             tmp[keyPair['name']] = keyPair[value]      
         return iter(tmp.items())
     
+    def getIPFSaddress(self):
+        return self.IPFSaddress   
+
+    def setIPFSaddress(self):
+        self.IPFSaddress = self.getElem('ipfsAddress',str)
+
+    def getET(self):
+        return self.ET
+
+    def setET(self):
+        self.ET = ET.parse(self.getFilePath())
+
     def __init__(self,path,defaultPath):
         super(config,self).__init__(path,defaultPath)
         self.setET()

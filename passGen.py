@@ -4,16 +4,24 @@ from src.salt import salt
 from src.vaultTable import vaultTable as VT
 from src.vaultKey import vaultKey as VK
 from src.config import config
+from src.bash import bash
 try:
     import ipfshttpclient as IPFS
 except ImportError:
     IPFS = None
 
-SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__)).replace('\\','/')
-DEFAULT_HIDE_PATH = '/.hide/vault.key'
-DEFAULT_VAULT_PATH = '/.vault/vault.json'
-DEFAULT_CONFIG_PATH = '/config/config.xml'
+OS = 'unix' if sys.platform == 'linux' else 'windows'
+PYTHON_VERSION = '2' if sys.version_info[0] == 2 else '3'
+SCRIPT_PATH = [os.path.dirname(os.path.abspath(__file__)).replace('\\','/'), 'str']
+DEFAULT_HIDE_PATH = ['/.hide/vault.key', 'str']
+DEFAULT_VAULT_PATH = ['/.vault/vault.json', 'str']
+DEFAULT_CONFIG_PATH = ['/config/config.xml', 'str']
+HASH_LIST_LEN = ['hashListSize', 'int', 1500]
+SPEC_CHAR_CHANCE = ['specCharChance', 'float', 0.17]
+CLEAR_FLAG = ['clearOnExit','int',1]
 
+#arg[0] = cmd, argv[1] = callableMethod dict, 
+#argv[2] = vaultObj, argv[3] = keyObj, argv[4] = configOb
 def runMethod(*argv):
     '''Run method if found in callableMethod dict'''
     for options in argv[4].getMethodsKeyIter('method'):     
@@ -26,6 +34,12 @@ def runMethod(*argv):
     return 0
 
 def exit(*argv):
+    '''exit console'''
+    tmp = argv[2].getElem(CLEAR_FLAG[0],CLEAR_FLAG[1])
+    if tmp == 1:
+        os.system('clear') if OS == 'unix' else os.system('cls')
+    elif CLEAR_FLAG[2] and tmp != 1 and tmp != 0:
+        os.system('clear') if OS == 'unix' else os.system('cls')
     garb = gc.collect()
     quit()
 
@@ -35,6 +49,16 @@ def getDecryptedVaultTable(*argv):
         return json.loads(argv[1].decryptByteString(argv[0].readFile()))
     return None
 
+def createShortcut(*argv):
+    '''Create bash script running script + arg, then a symbolic link to script'''
+    if OS == 'unix':
+        bashFile = bash(read('\nInput bash script path\n'),SCRIPT_PATH[0] + '/tmp.sh')
+        pythonCmd = 'python' if PYTHON_VERSION == '2' else 'python3'
+        bashFile.writeFile('#! /bin/bash\n{0} {1}/{2} -m={3}'.format(pythonCmd,SCRIPT_PATH[0],os.path.basename(__file__),read('\nInput shortcut method\n')),'w+')
+        bashFile.createShortcut(read('\nInput shortcut path\n'))
+    else:
+        print('\nERROR: only supported on linux (for now)....\n')
+
 def delVaultTableRecord(*argv):
     '''Delete record from vault table by user input keyname'''
     tmp = getDecryptedVaultTable(*argv) 
@@ -42,9 +66,12 @@ def delVaultTableRecord(*argv):
         siteAlias = read('which site alias to delete? (i.e. "reddit")\n')
         check = read('\nAre you sure? Can not be undone [y/n]?\n')
         if check[0].lower() == 'y':
-            tmp['passwords'].pop(str(siteAlias))
-            print('\n{} record deleted....\n'.format(siteAlias))
-            argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
+            try:
+                tmp['passwords'].pop(str(siteAlias))
+                print('\n{} record deleted....\n'.format(siteAlias))
+                argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')),'wb')
+            except KeyError:
+                print('\nERROR: {} is not an alias in vault\n'.format(siteAlias))
     else:
         print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))
 
@@ -56,7 +83,7 @@ def updateVaultTable(*argv):
         pw = read('enter pw:\n')
         tmp['passwords'][siteAlias] = pw
         try:
-            argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
+            argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')),'wb')
             uploadToIPFS(*argv) if IPFS else None
         except (IOError, ValueError) as e:
             print(e)
@@ -88,7 +115,7 @@ def printVaultTable(*argv):
     if argv[0].checkFile():
         tmp = argv[1].decryptByteString(argv[0].readFile())   
     if tmp:
-        if sys.version_info[0] == 2:
+        if PYTHON_VERSION == '2':
             print(json.loads(tmp))
         else:
             print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
@@ -103,9 +130,10 @@ def uploadToIPFS(*argv):
             if argv[0].checkFile():
                 client = IPFS.connect()
                 IPFSaddress = argv[2].getIPFSaddress()
-                if len(IPFSaddress) == 46 and client.pin.ls(IPFSaddress):
-                    client.pin.rm(IPFSaddress)
-                res = client.add(SCRIPT_PATH + DEFAULT_VAULT_PATH)
+                if IPFSaddress:
+                    if len(IPFSaddress) == 46 and client.pin.ls(IPFSaddress):
+                        client.pin.rm(IPFSaddress)
+                res = client.add(SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0])
                 argv[2].updateIPFSaddress(res['Hash'])
                 print('\nNew CID: {}\n'.format(res['Hash']))
                 client.pin.add(res['Hash'])
@@ -124,27 +152,26 @@ def createVaultTable(*argv):
     '''Create vault with default values at default location'''
     mkVaultBool = True
     if argv[0].checkFile():
-        inputMsg = '\t!!!! WARNING: This will overwrite vault at {0}{1} \nContinue? [y/n]: '.format(SCRIPT_PATH,DEFAULT_VAULT_PATH)
+        inputMsg = '\t!!!! WARNING: This will overwrite vault at {0}{1} \nContinue? [y/n]: '.format(SCRIPT_PATH[0],DEFAULT_VAULT_PATH[0])
         userInput = read(inputMsg)
         if userInput.lower() == 'y':
-            mkVaultBool = True
             argv[1].rmFile()
             argv[0].rmFile()
         elif userInput.lower() == 'n':
-            mkVaultbool = False
+            mkVaultBool = False
             print('\nVault not created\n')
         else:
-            mkVaultbool = False
+            mkVaultBool = False
             print('No option selected')
     if mkVaultBool:
         argv[0].mkDir() if not argv[0].checkParentDir() else None
         argv[1].mkDir() if not argv[1].checkParentDir() else None
-        vaultObj = VT(argv[2],SCRIPT_PATH + DEFAULT_VAULT_PATH)
-        keyObj = VK(None,SCRIPT_PATH + DEFAULT_HIDE_PATH)
+        vaultObj = VT(argv[2],SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0])
+        keyObj = VK(None,SCRIPT_PATH[0] + DEFAULT_HIDE_PATH[0])
         keyObj.generateVaultKey()
         tmp = { "passwords" : { } }
-        vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')))
-        print('\nvault created at {}/.vault\n'.format(SCRIPT_PATH))
+        vaultObj.writeFile(keyObj.encryptByteString(bytes(json.dumps(tmp), 'utf-8')),'wb')
+        print('\nvault created at {}/.vault\n'.format(SCRIPT_PATH[0]))
         uploadToIPFS(*argv)
 
 def hashInputPlusSalt(*argv):
@@ -161,13 +188,14 @@ def hashInputPlusSalt(*argv):
 
 def generateNewPW(*argv):
     '''Prompt for password seed and generate random sha256'''
-    index = int(round(random.randrange(0,argv[2].getHashListSize() - 1)))
+    hashListSize = argv[2].getElem('hashListSize','int') if argv[2].getElem('hashListSize','int') else HASH_LIST_LEN[0]
+    index = int(round(random.randrange(0,hashListSize - 1)))
     i = 0
     hashList = []
     startTime = time.perf_counter()
-    while i < argv[2].getHashListSize():
+    while i < hashListSize:
         saltObj = salt()
-        hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),argv[2].getSpecCharChance()))
+        hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),argv[2].getElem(SPEC_CHAR_CHANCE[0],SPEC_CHAR_CHANCE[1])))
         i += 1
     print('\n{0}: {1} hashes in {2} seconds....\n\nNew password: {3}'.format(platform.processor(),i,time.perf_counter() - startTime,hashList[index]))
 
@@ -181,10 +209,11 @@ def setCallableMethods():
     tmp['uploadToIPFS'] = uploadToIPFS
     tmp['printVaultTableIPFS'] = printVaultTableIPFS
     tmp['delVaultTableRecord'] = delVaultTableRecord
+    tmp['createShortcut'] = createShortcut
     tmp['quit'] = exit
     return tmp
 
-def getOptionDescs(configObj):
+def setOptionString(configObj):
     mainMethods = configObj.getMethodsKeyIter('desc')
     optionString = '\n==passGen==\n\nOptions:'
     for elem in mainMethods:
@@ -197,6 +226,7 @@ def getArgs():
     parser = argparse.ArgumentParser()
     parser.add_argument('-k','--key')
     parser.add_argument('-c','--config')
+    parser.add_argument('-m','--method')
     return parser.parse_args()
 
 def main():
@@ -205,13 +235,14 @@ def main():
     configs = []
     vaultKeys = []
     vaults = []
-    configs.append(config(args.config, SCRIPT_PATH + DEFAULT_CONFIG_PATH))
-    vaultKeys.append(VK(args.key, SCRIPT_PATH + DEFAULT_HIDE_PATH))
-    vaults.append(VT(configs[0], SCRIPT_PATH + DEFAULT_VAULT_PATH))
+    configs.append(config(args.config, SCRIPT_PATH[0] + DEFAULT_CONFIG_PATH[0]))
+    vaultKeys.append(VK(args.key, SCRIPT_PATH[0] + DEFAULT_HIDE_PATH[0]))
+    vaults.append(VT(configs[0], SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0]))
     while 1:
-        optionString = getOptionDescs(configs[0])        
-        cmd = read(optionString)
+        optionString = setOptionString(configs[0])
+        cmd = args.method if args.method else read(optionString)
         print('\nERROR: Command "{}" not found\n'.format(cmd)) if not runMethod(cmd,setCallableMethods(),vaults[0],vaultKeys[0],configs[0]) else None
+        args.method = None
                 
 if __name__ == '__main__':
     main()

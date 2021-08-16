@@ -7,7 +7,7 @@ class vaultTable(file):
     def setVaultPath(self,defaultPath):
         '''Set vault path to object attribute'''
         config = self.getConfig()
-        tmp = config.getVaultPath()
+        tmp = config.getElem('vaultPath','str')
         if tmp and os.path.exists(tmp):
             super(vaultTable,self).__init__(tmp,defaultPath)
             return

@@ -20,7 +20,7 @@ class vaultKey(file):
         '''Create Fernet key and save to default location'''
         print('generating vault.key....')
         key = Fernet.generate_key()
-        self.writeFile(key)
+        self.writeFile(key,'wb')
 
     def __init__(self,keyPath,defaultPath):
         super(vaultKey,self).__init__(keyPath,defaultPath)

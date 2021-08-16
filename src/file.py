@@ -29,9 +29,9 @@ class file(object):
             with open(self.getFilePath(),'rb') as f:
                 return f.read()
     
-    def writeFile(self,content):
+    def writeFile(self,content,type):
         '''Write to file (bytes)'''
-        with open(self.getFilePath(),'wb') as f:
+        with open(self.getFilePath(),type) as f:
             f.write(content)
     
     def setFilePath(self,filePath,defaultPath):

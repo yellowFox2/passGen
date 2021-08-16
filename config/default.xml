@@ -3,7 +3,7 @@
 	<clearOnExit>1</clearOnExit>
 	<hashListSize>1500</hashListSize>
 	<specCharChance>0.17</specCharChance>
-	<vaultPath />
+	<vaultPath />	
 	<ipfsAddress />
 	<aliases>
 		<alias name="genPass" method="generateNewPW" desc="generate 64 char password" />
@@ -15,6 +15,7 @@
         <alias name="deleteRecord" method="delVaultTableRecord" desc="delete vault value" />
         <alias name="createShortcut" method="createShortcut" desc="LINUX ONLY. Create symbolic link (shortcut) to script with a given argument (optional)" />        
 		<alias name="quit" method="quit" desc="close session" />
+<!--secondary aliases-->
 		<alias name="gp" method="generateNewPW" desc="generate 64 char password" />
 		<alias name="vi" method="createVaultTable" desc="create new vault" />
 		<alias name="iu" method="uploadToIPFS" desc="copy encrypted vault to IPFS" />
