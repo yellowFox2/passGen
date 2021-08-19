@@ -47,6 +47,10 @@ def exit(*argv):
     garb = gc.collect()
     quit()
 
+def cleanup(arg1):
+    del arg1[0]
+    garb = gc.collect()
+
 def getDecryptedVaultTable(*argv):
 	'''Return decrypted bytestring as json'''
 	if argv[0].checkFile():
@@ -65,15 +69,17 @@ def createShortcut(*argv):
 
 def delVaultTableRecord(*argv):
     '''Delete record from vault table by user input keyname'''
-    tmp = getDecryptedVaultTable(*argv) 
-    if tmp:
-        siteAlias = read('which site alias to delete? (i.e. "reddit")\n')
-        check = read('\nAre you sure? Can not be undone [y/n]?\n')
+    siteAlias = read('which site alias to delete? (i.e. "reddit")\n')
+    check = read('\nAre you sure? Can not be undone [y/n]?\n')
+    tmp = []
+    tmp.append(getDecryptedVaultTable(*argv))
+    if tmp[0]:
         if check[0].lower() == 'y':
             try:
-                tmp['passwords'].pop(str(siteAlias))
+                tmp[0]['passwords'].pop(str(siteAlias))
                 print('\n{} record deleted....\n'.format(siteAlias))
-                argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')),'wb')
+                argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp[0]), 'utf-8')),'wb')
+                cleanup(tmp)
             except KeyError:
                 print('\nERROR: {} is not an alias in vault\n'.format(siteAlias))
     else:
@@ -81,13 +87,15 @@ def delVaultTableRecord(*argv):
 
 def updateVaultTable(*argv):
     '''Add/update vault keypair based on given user input'''
-    tmp = getDecryptedVaultTable(*argv)
-    if tmp:
+    tmp = []
+    tmp.append(getDecryptedVaultTable(*argv))
+    if tmp[0]:
         siteAlias = read('site alias? (i.e. "reddit")\n')
         pw = read('enter pw:\n')
-        tmp['passwords'][siteAlias] = pw
+        tmp[0]['passwords'][siteAlias] = pw
         try:
-            argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp), 'utf-8')),'wb')
+            argv[0].writeFile(argv[1].encryptByteString(bytes(json.dumps(tmp[0]), 'utf-8')),'wb')
+            cleanup(tmp)
         except (IOError, ValueError) as e:
             print(e)
     else:
@@ -95,32 +103,34 @@ def updateVaultTable(*argv):
 
 def printVaultTableIPFS(*argv):
     '''Print JSON of Vault Table on IPFS (from referenced address in config.xml)'''
-    tmp = None
+    tmp = []
     IPFSaddress = argv[2].getElem(IPFS_ADDRESS[0],IPFS_ADDRESS[1])
     if IPFS and IPFSaddress:
         if len(IPFSaddress) == 46:
             print('\nreading from IPFS....\n')
             client = IPFS.connect()
-            tmp = argv[1].decryptByteString(client.cat(IPFSaddress))
+            tmp.append(argv[1].decryptByteString(client.cat(IPFSaddress)))
             client.close()
-            if tmp:
+            if tmp[0]:
                 if sys.version_info[0] == 2:
-                    print(json.loads(tmp))
+                    print(json.loads(tmp[0]))
                 else:
-                    print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
+                    print(json.dumps(json.loads(tmp[0]),sort_keys=True,indent=4))
+                cleanup(tmp)
     else:
         print('\nERROR: No IPFS address found in {}'.format(argv[2].getFilePath()))
 
 def printVaultTable(*argv):
     '''Print JSON of Vault Table'''
-    tmp = None
+    tmp = []
     if argv[0].checkFile():
-        tmp = argv[1].decryptByteString(argv[0].readFile())   
-    if tmp:
+        tmp.append(getDecryptedVaultTable(*argv))
+    if tmp[0]:
         if PYTHON_VERSION == '2':
-            print(json.loads(tmp))
+            print(tmp[0])
         else:
-            print(json.dumps(json.loads(tmp),sort_keys=True,indent=4))
+            print(json.dumps(tmp[0],sort_keys=True,indent=4))
+            cleanup(tmp)
     else:
         print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))
 
