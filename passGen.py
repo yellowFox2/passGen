@@ -39,10 +39,7 @@ def runMethod(*argv):
 
 def exit(*argv):
     '''exit console'''
-    tmp = argv[2].getElem(CLEAR_FLAG[0],CLEAR_FLAG[1])
-    if tmp == 1:
-        os.system('clear') if OS == 'unix' else os.system('cls')
-    elif CLEAR_FLAG[2] and tmp != 1 and tmp != 0:
+    if argv[2].getElem(CLEAR_FLAG[0],CLEAR_FLAG[1]):
         os.system('clear') if OS == 'unix' else os.system('cls')
     garb = gc.collect()
     quit()
@@ -112,7 +109,7 @@ def printVaultTableIPFS(*argv):
             tmp.append(argv[1].decryptByteString(client.cat(IPFSaddress)))
             client.close()
             if tmp[0]:
-                if sys.version_info[0] == 2:
+                if PYTHON_VERSION== 2:
                     print(json.loads(tmp[0]))
                 else:
                     print(json.dumps(json.loads(tmp[0]),sort_keys=True,indent=4))
@@ -155,7 +152,7 @@ def uploadToIPFS(*argv):
 
 def read(prompt):
     '''Call raw_input() or input() depending on running python version'''
-    if sys.version_info[0] == 2:
+    if PYTHON_VERSION== 2:
         return raw_input(prompt)
     return input(prompt)
 

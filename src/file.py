@@ -2,6 +2,10 @@ import os
 
 #TO-DO: More error-handling
 class file(object):
+    
+    #TO-DO: make shortcut to file
+    def mklnk(self,target):
+        pass
 
     def mkDir(self):
         os.mkdir(os.path.dirname(self.getFilePath()))

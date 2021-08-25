@@ -1,8 +1,8 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <cnfg>
-	<clearOnExit>0</clearOnExit>
-	<hashListSize>1500</hashListSize>
-	<specCharChance>0.17</specCharChance>
+	<clearOnExit>1</clearOnExit><!--default = 1-->
+	<hashListSize>1500</hashListSize><!--default = 1500-->
+	<specCharChance>0.17</specCharChance><!--default = 0.17-->
 	<vaultPath />
 	<ipfsAddress />
 	<aliases>
