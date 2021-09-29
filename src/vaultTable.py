@@ -1,16 +1,15 @@
 import os
-import xml.etree.ElementTree as ET
 from .file import file
 
 class vaultTable(file):
     
-    def setFilePath(self,configuredPath,defaultPath):
-        tmp = configuredPath
-        if tmp:
-            self.filePath = tmp if os.path.exists(os.path.dirname(tmp)) else defaultPath
-        else:
-            self.filePath = defaultPath
-        print('\nUsing path: {}\n'.format(self.filePath))
+    # def setFilePath(self,configuredPath,defaultPath):
+        # tmp = configuredPath
+        # if tmp:
+            # self.filePath = tmp if os.path.exists(os.path.dirname(tmp)) else defaultPath
+        # else:
+            # self.filePath = defaultPath
+        # print('\nUsing path: {}\n'.format(self.filePath))
 
     def setEncryptedVaultTable(self,content):
         self.encryptedVaultTable = bytes(content)

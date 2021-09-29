@@ -1,6 +1,5 @@
 import os
 
-#TO-DO: More error-handling
 class file(object):
     
     #TO-DO: make shortcut to file
@@ -39,10 +38,12 @@ class file(object):
             f.write(content)
     
     def setFilePath(self,filePath,defaultPath):
-        self.filePath = filePath
-        tmp = self.checkFile()
-        if not tmp:
+        tmp = filePath
+        if tmp:
+            self.filePath = tmp if os.path.exists(os.path.dirname(tmp)) else defaultPath
+        else:
             self.filePath = defaultPath
+        print('\nUsing path: {}\n'.format(self.filePath))
         
     def getFilePath(self):
         return self.filePath    
