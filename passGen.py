@@ -122,12 +122,12 @@ def printVaultTable(*argv):
     tmp = []
     if argv[0].checkFile():
         tmp.append(getDecryptedVaultTable(*argv))
-    if tmp[0]:
-        if PYTHON_VERSION == '2':
-            print(tmp[0])
-        else:
-            print(json.dumps(tmp[0],sort_keys=True,indent=4))
-            cleanup(tmp)
+        if tmp[0]:
+            if PYTHON_VERSION == '2':
+                print(tmp[0])
+            else:
+                print(json.dumps(tmp[0],sort_keys=True,indent=4))
+                cleanup(tmp)
     else:
         print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))
 
