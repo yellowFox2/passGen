@@ -3,7 +3,7 @@
 	<clearOnExit>1</clearOnExit>
 	<hashListSize>1500</hashListSize>
 	<specCharChance>0.17</specCharChance>
-	<vaultPath>C:/TMP/passGen/.vault/vault.json</vaultPath>
+	<vaultPath />
 	<ipfsAddress />
 	<aliases>
 		<alias name="genPass" method="generateNewPW" desc="generate 64 char password" />
