@@ -193,11 +193,11 @@ def uploadToIPFS(*argv):
                 client = IPFS.connect()
                 IPFSaddress = argv[2].getElem(IPFS_ADDRESS[0],IPFS_ADDRESS[1])
                 if IPFSaddress:
-                    if len(IPFSaddress) == 46 and client.pin.ls(IPFSaddress):
-                        try:
+                    try:
+                        if len(IPFSaddress) == 46 and client.pin.ls(IPFSaddress):
                             client.pin.rm(IPFSaddress)
-                        except:
-                            print('\nERROR: {} not pinned to this machine....\nPinning new file\n'.format(IPFSaddress))
+                    except:
+                        print('\nERROR: {} not pinned to this machine....\nPinning new file\n'.format(IPFSaddress))
                 res = client.add(SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0])
                 argv[2].updateElem('ipfsAddress', res['Hash'])
                 print('\nNew CID: {}\n'.format(res['Hash']))
