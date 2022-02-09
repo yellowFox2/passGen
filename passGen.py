@@ -93,7 +93,7 @@ def getVaultTableRecordQR(*argv):
     try:
         val = getVaultTableRecord(*argv)
         if val:
-            tmpImg = qrcode.make(getVaultTableRecord(*argv))
+            tmpImg = qrcode.make(val)
             tmpImg.save('tmp.png')
             tmpImg = Image.open('tmp.png')
             tmpImg.show()
