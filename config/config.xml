@@ -13,8 +13,12 @@
 		<alias name="getVault" method="printVaultTable" desc="read vault values" />
 		<alias name="updateVault" method="updateVaultTable" desc="add vault value" />
         <alias name="deleteRecord" method="delVaultTableRecord" desc="delete vault value" />
-        <alias name="createShortcut" method="createShortcut" desc="LINUX ONLY. Create symbolic link (shortcut) to script with a given argument (optional)" />        
+        <alias name="createShortcut" method="createShortcut" desc="LINUX ONLY. Create symbolic link (shortcut) to script with a given argument (optional)" />
+		<alias name="getRecord" method="getVaultTableRecord" desc="Display vault table record" /> 		
+		<alias name="getRecordQR" method="getVaultTableRecordQR" desc="Display QR of vault table record" />
+		<alias name="genPassQR" method="genPassQR" desc="Display QR of generated PW" /> 		
 		<alias name="quit" method="quit" desc="close session" />
+<!--secondary aliases-->	
 		<alias name="gp" method="generateNewPW" desc="generate 64 char password" />
 		<alias name="vi" method="createVaultTable" desc="create new vault" />
 		<alias name="iu" method="uploadToIPFS" desc="copy encrypted vault to IPFS" />
@@ -22,7 +26,10 @@
 		<alias name="gv" method="printVaultTable" desc="read vault values" />
 		<alias name="uv" method="updateVaultTable" desc="add vault value" />
         <alias name="dr" method="delVaultTableRecord" desc="delete vault value" />
-		<alias name="cs" method="createShortcut" desc="LINUX ONLY. Create symbolic link (shortcut) to script with a given argument (optional)" />        
+		<alias name="cs" method="createShortcut" desc="LINUX ONLY. Create symbolic link (shortcut) to script with a given argument (optional)" />
+		<alias name="gr" method="getVaultTableRecord" desc="Display vault table record" /> 		
+		<alias name="grq" method="getVaultTableRecordQR" desc="Display QR of vault table record" />
+		<alias name="gpq" method="genPassQR" desc="Display QR of generated PW" /> 
 		<alias name="q" method="quit" desc="close session" />
 	</aliases>
 </cnfg>

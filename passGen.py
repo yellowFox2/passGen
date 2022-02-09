@@ -1,5 +1,6 @@
-import hashlib, random, sys, argparse, os, json, time, platform, gc
+import hashlib, random, sys, argparse, os, json, time, platform, gc, qrcode
 import xml.etree.ElementTree as ET
+from PIL import Image
 from src.salt import salt
 from src.vaultTable import vaultTable as VT
 from src.vaultKey import vaultKey as VK
@@ -11,7 +12,7 @@ try:
 except ImportError:
     IPFS = None
 
-OS = 'unix' if sys.platform == 'linux' else 'windows'
+OS = 'win32' if sys.platform == 'win32' else 'unix'
 PYTHON_VERSION = '2' if sys.version_info[0] == 2 else '3'
 SCRIPT_PATH = [os.path.dirname(os.path.abspath(__file__)).replace('\\','/'), 'str']
 DEFAULT_HIDE_PATH = ['/.hide/vault.key', 'str']
@@ -23,7 +24,8 @@ SPEC_CHAR_CHANCE = ['specCharChance', 'float', 0.17]
 CLEAR_FLAG = ['clearOnExit','int', 1]
 IPFS_ADDRESS = ['ipfsAddress', 'str', '']
 METHOD_CALL_KEYS = ['generateNewPW', 'createVaultTable','printVaultTable','updateVaultTable',
-'uploadToIPFS', 'printVaultTableIPFS', 'delVaultTableRecord', 'createShortcut', 'quit']
+'uploadToIPFS', 'printVaultTableIPFS', 'delVaultTableRecord', 'createShortcut', 'quit',
+'getVaultTableRecord', 'getVaultTableRecordQR', 'genPassQR']
 
 #arg[0] = cmd, argv[1] = callableMethod dict, argv[2] = vaultObj, argv[3] = keyObj, argv[4] = configOb
 def runMethod(*argv):
@@ -32,6 +34,7 @@ def runMethod(*argv):
         if argv[0].lower() == methods[0].lower():
             if methods[1] in argv[1]:
                 argv[1][methods[1]](argv[2],argv[3],argv[4])
+                cleanup(*argv)
             else:
                 print('\nERROR: Method "{}" not found. Please update config.xml or revert to default.xml\n'.format(methods[1]))
             return 1
@@ -40,12 +43,16 @@ def runMethod(*argv):
 def exit(*argv):
     '''exit console'''
     if argv[2].getElem(CLEAR_FLAG[0],CLEAR_FLAG[1]):
+        print(OS)
+        print(type(OS))
         os.system('clear') if OS == 'unix' else os.system('cls')
-    garb = gc.collect()
+    cleanup(*argv)
     quit()
 
-def cleanup(arg1):
-    del arg1[0]
+def cleanup(*argv):
+    '''Delete values referenced by *argv & garbage collect'''
+    for arg in argv:
+        del arg
     garb = gc.collect()
 
 def getDecryptedVaultTable(*argv):
@@ -53,6 +60,49 @@ def getDecryptedVaultTable(*argv):
 	if argv[0].checkFile():
 		return json.loads(argv[1].decryptByteString(argv[0].readFile()))
 	return None
+
+def getVaultTableRecord(*argv):
+    '''Delete record from vault table by user input keyname'''
+    siteAlias = read('which site alias to display? (i.e. "reddit")\n')
+    tmp = []
+    tmp.append(getDecryptedVaultTable(*argv))
+    if tmp[0]:
+        try:
+            print('\n{}\n'.format(tmp[0]['passwords'].get(str(siteAlias))))
+            return tmp[0]['passwords'].get(str(siteAlias))
+        except KeyError:
+            print('\nERROR: {} is not an alias in vault\n'.format(siteAlias))
+    else:
+        print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))
+
+def genPassQR(*argv):
+    '''Prompt for password seed and generate random sha256 and display QR of password'''
+    try:
+        img = qrcode.make(generateNewPW(*argv))
+        img.save('tmp.png')
+        img = Image.open('tmp.png')
+        img.show()
+        if os.path.exists('tmp.png'):
+            os.remove('tmp.png')
+    except:
+        print('\nERROR: cannot create QR')
+
+#CLEAN UP
+def getVaultTableRecordQR(*argv):
+    ''' QR code of vault table value'''
+    try:
+        val = getVaultTableRecord(*argv)
+        if val:
+            tmpImg = qrcode.make(getVaultTableRecord(*argv))
+            tmpImg.save('tmp.png')
+            tmpImg = Image.open('tmp.png')
+            tmpImg.show()
+            if os.path.exists('tmp.png'):
+                os.remove('tmp.png')
+        else:
+            print('\nERROR: cannot create QR -- key not found....\n')
+    except:
+        print('\nERROR: cannot create QR')      
 
 def createShortcut(*argv):
     '''Create bash script running script + arg, then a symbolic link to script'''
@@ -67,7 +117,7 @@ def createShortcut(*argv):
 def delVaultTableRecord(*argv):
     '''Delete record from vault table by user input keyname'''
     siteAlias = read('which site alias to delete? (i.e. "reddit")\n')
-    check = read('\nAre you sure? Can not be undone [y/n]?\n')
+    check = read('\nAre you sure? Can not be undone [y/N]?\n')
     tmp = []
     tmp.append(getDecryptedVaultTable(*argv))
     if tmp[0]:
@@ -106,14 +156,17 @@ def printVaultTableIPFS(*argv):
         if len(IPFSaddress) == 46:
             print('\nreading from IPFS....\n')
             client = IPFS.connect()
-            tmp.append(argv[1].decryptByteString(client.cat(IPFSaddress)))
-            client.close()
-            if tmp[0]:
-                if PYTHON_VERSION== 2:
-                    print(json.loads(tmp[0]))
-                else:
-                    print(json.dumps(json.loads(tmp[0]),sort_keys=True,indent=4))
-                cleanup(tmp)
+            try:
+                tmp.append(argv[1].decryptByteString(client.cat(IPFSaddress)))
+                client.close()
+                if tmp[0]:
+                    if PYTHON_VERSION== 2:
+                        print(json.loads(tmp[0]))
+                    else:
+                        print(json.dumps(json.loads(tmp[0]),sort_keys=True,indent=4))
+                    cleanup(tmp)
+            except:
+                print('\nERROR: IPFS address {} not found....\n'.format(IPFSaddress))
     else:
         print('\nERROR: No IPFS address found in {}'.format(argv[2].getFilePath()))
 
@@ -127,21 +180,24 @@ def printVaultTable(*argv):
                 print(tmp[0])
             else:
                 print(json.dumps(tmp[0],sort_keys=True,indent=4))
-                cleanup(tmp)
+            cleanup(tmp)
     else:
         print('\nERROR: Table not found at {}\n'.format(argv[0].getFilePath()))
 
 def uploadToIPFS(*argv):
     '''Upload encrypted JSON to IPFS if running IPFS node'''
     if IPFS:
-        uploadOption = read('Upload to IPFS? [y/n]: ')
+        uploadOption = read('Upload to IPFS? This will overwrite IPFS address value in config.xml [y/N]: ')
         if uploadOption.lower() == 'y':
             if argv[0].checkFile():
                 client = IPFS.connect()
                 IPFSaddress = argv[2].getElem(IPFS_ADDRESS[0],IPFS_ADDRESS[1])
                 if IPFSaddress:
                     if len(IPFSaddress) == 46 and client.pin.ls(IPFSaddress):
-                        client.pin.rm(IPFSaddress)
+                        try:
+                            client.pin.rm(IPFSaddress)
+                        except:
+                            print('\nERROR: {} not pinned to this machine....\nPinning new file\n'.format(IPFSaddress))
                 res = client.add(SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0])
                 argv[2].updateElem('ipfsAddress', res['Hash'])
                 print('\nNew CID: {}\n'.format(res['Hash']))
@@ -158,7 +214,7 @@ def read(prompt):
 
 def overwriteVault(*argv):
 	'''Validate that user wants to overwrite vault'''
-	inputMsg = '\t!!!! WARNING: This will overwrite vault at {0}{1} \nContinue? [y/n]: '.format(SCRIPT_PATH[0],DEFAULT_VAULT_PATH[0])
+	inputMsg = '\t!!!! WARNING: This will overwrite vault at {0}{1} \nContinue? [y/N]: '.format(SCRIPT_PATH[0],DEFAULT_VAULT_PATH[0])
 	userInput = read(inputMsg)
 	if userInput.lower() == 'y':
 		argv[1].rmFile()
@@ -215,6 +271,7 @@ def generateNewPW(*argv):
         hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),tmp2)) if tmp2 else hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),SPEC_CHAR_CHANCE[2]))
         i += 1
     print('\n{0}: {1} hashes in {2} seconds....\n\nNew password: {3}'.format(platform.processor(),i,time.perf_counter() - startTime,hashList[index]))
+    return hashList[index]
 
 def setCallableMethods():
     '''Set user-callable methods dict'''
@@ -228,6 +285,9 @@ def setCallableMethods():
     tmp[METHOD_CALL_KEYS[6]] = delVaultTableRecord
     tmp[METHOD_CALL_KEYS[7]] = createShortcut
     tmp[METHOD_CALL_KEYS[8]] = exit
+    tmp[METHOD_CALL_KEYS[9]] = getVaultTableRecord
+    tmp[METHOD_CALL_KEYS[10]] = getVaultTableRecordQR
+    tmp[METHOD_CALL_KEYS[11]] = genPassQR
     return tmp
 
 def setOptionString(configObj):
