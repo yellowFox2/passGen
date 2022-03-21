@@ -1,9 +1,10 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <cnfg>
 	<clearOnExit>1</clearOnExit>
+	<passwordLength>64</passwordLength>
 	<hashListSize>1500</hashListSize>
 	<specCharChance>0.17</specCharChance>
-	<vaultPath />
+	<vaultPath>C:/Users/joenu/Desktop/3-21-22/passGen/.vault/vault.json</vaultPath>
 	<ipfsAddress />
 	<aliases>
 		<alias name="genPass" method="generateNewPW" desc="generate 64 char password" />
@@ -18,7 +19,7 @@
 		<alias name="getRecordQR" method="getVaultTableRecordQR" desc="Display QR of vault table record" />
 		<alias name="genPassQR" method="genPassQR" desc="Display QR of generated PW" /> 		
 		<alias name="quit" method="quit" desc="close session" />
-<!--secondary aliases-->	
+	
 		<alias name="gp" method="generateNewPW" desc="generate 64 char password" />
 		<alias name="vi" method="createVaultTable" desc="create new vault" />
 		<alias name="iu" method="uploadToIPFS" desc="copy encrypted vault to IPFS" />

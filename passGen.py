@@ -1,6 +1,5 @@
-import hashlib, random, sys, argparse, os, json, time, platform, gc, qrcode
+import hashlib, random, sys, argparse, os, json, time, platform, gc
 import xml.etree.ElementTree as ET
-from PIL import Image
 from src.salt import salt
 from src.vaultTable import vaultTable as VT
 from src.vaultKey import vaultKey as VK
@@ -12,6 +11,16 @@ try:
 except ImportError:
     IPFS = None
 
+try:
+    import qrcode
+except ImportError:
+    qrcode = None
+
+try:
+    from PIL import Image
+except ImportError:
+    Image = None        
+
 OS = 'win32' if sys.platform == 'win32' else 'unix'
 PYTHON_VERSION = '2' if sys.version_info[0] == 2 else '3'
 SCRIPT_PATH = [os.path.dirname(os.path.abspath(__file__)).replace('\\','/'), 'str']
@@ -22,6 +31,7 @@ VAULT_PATH = ['vaultPath','str', SCRIPT_PATH[0] + DEFAULT_VAULT_PATH[0]]
 HASH_LIST_LEN = ['hashListSize', 'int', 1500]
 SPEC_CHAR_CHANCE = ['specCharChance', 'float', 0.17]
 CLEAR_FLAG = ['clearOnExit','int', 1]
+PASSWORD_LENGTH = ['passwordLength', 'int', 64]
 IPFS_ADDRESS = ['ipfsAddress', 'str', '']
 METHOD_CALL_KEYS = ['generateNewPW', 'createVaultTable','printVaultTable','updateVaultTable',
 'uploadToIPFS', 'printVaultTableIPFS', 'delVaultTableRecord', 'createShortcut', 'quit',
@@ -78,29 +88,34 @@ def getVaultTableRecord(*argv):
 def genPassQR(*argv):
     '''Prompt for password seed and generate random sha256 and display QR of password'''
     try:
-        img = qrcode.make(generateNewPW(*argv))
-        img.save('tmp.png')
-        img = Image.open('tmp.png')
-        img.show()
-        if os.path.exists('tmp.png'):
-            os.remove('tmp.png')
+	    if qrcode and Image:
+	        img = qrcode.make(generateNewPW(*argv))
+	        img.save('tmp.png')
+	        img = Image.open('tmp.png')
+	        img.show()
+	        if os.path.exists('tmp.png'):
+	            os.remove('tmp.png')
+	    else:
+	        print('\nERROR: qrcode and/or pillow pip package(s) not installed....\n')
     except:
         print('\nERROR: cannot create QR')
 
-#CLEAN UP
 def getVaultTableRecordQR(*argv):
     ''' QR code of vault table value'''
     try:
-        val = getVaultTableRecord(*argv)
-        if val:
-            tmpImg = qrcode.make(val)
-            tmpImg.save('tmp.png')
-            tmpImg = Image.open('tmp.png')
-            tmpImg.show()
-            if os.path.exists('tmp.png'):
-                os.remove('tmp.png')
-        else:
-            print('\nERROR: cannot create QR -- key not found....\n')
+	    if qrcode and Image:
+	        val = getVaultTableRecord(*argv)
+	        if val:
+	            tmpImg = qrcode.make(val)
+	            tmpImg.save('tmp.png')
+	            tmpImg = Image.open('tmp.png')
+	            tmpImg.show()
+	            if os.path.exists('tmp.png'):
+	                os.remove('tmp.png')
+	        else:
+	            print('\nERROR: cannot create QR -- key not found....\n')
+	    else:
+	        print('\nERROR: qrcode and/or pillow pip package(s) not installed....\n')
     except:
         print('\nERROR: cannot create QR')      
 
@@ -270,8 +285,12 @@ def generateNewPW(*argv):
         saltObj = salt()
         hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),tmp2)) if tmp2 else hashList.append(hashInputPlusSalt('tmp',saltObj.getSalt(),SPEC_CHAR_CHANCE[2]))
         i += 1
-    print('\n{0}: {1} hashes in {2} seconds....\n\nNew password: {3}'.format(platform.processor(),i,time.perf_counter() - startTime,hashList[index]))
-    return hashList[index]
+    if argv[2].getElem(PASSWORD_LENGTH[0],PASSWORD_LENGTH[1]):
+    	newPW = hashList[index][0:argv[2].getElem(PASSWORD_LENGTH[0],PASSWORD_LENGTH[1])]
+    else:
+    	newPW = hashList[index][0:PASSWORD_LENGTH[2]]
+    print('\n{0}: {1} hashes in {2} seconds....\n\nNew password: {3}'.format(platform.processor(),i,time.perf_counter() - startTime,newPW))
+    return newPW
 
 def setCallableMethods():
     '''Set user-callable methods dict'''
